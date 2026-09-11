@@ -1,61 +1,55 @@
-import bcrypt
-from db.connection import get_connection
+from api import client
 
 
 class User:
     @staticmethod
-    def create(username, password, email, phone=None):
-        password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    def register(username, password, full_name, email, phone, address, callback):
+        def on_response(response, error):
+            if error or response is None:
+                callback({"error": str(error)}, 0)
+                return
+            data = response.json()
+            if response.status_code == 201:
+                client.set_session(data["tokens"], customer=data.get("customer"))
+            callback(data, response.status_code)
 
-        conn = get_connection()
-        cursor = conn.cursor()
-        try:
-            query = (
-                "INSERT INTO users (username, password_hash, email, phone) "
-                "VALUES (%s, %s, %s, %s)"
-            )
-            values = (username, password_hash, email, phone)
-            cursor.execute(query, values)
-            conn.commit()
-            return cursor.lastrowid
-        finally:
-            cursor.close()
-            conn.close()
+        client.post_async("/accounts/register/", on_response, data={
+            "username": username, "password": password, "full_name": full_name,
+            "email": email or "", "phone": phone or "", "address": address or ""
+        })
 
     @staticmethod
-    def get_by_username(username):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = "SELECT * FROM users WHERE username = %s"
-            cursor.execute(query, (username,))
-            return cursor.fetchone()
-        finally:
-            cursor.close()
-            conn.close()
+    def login(username, password, callback):
+        def on_response(response, error):
+            if error or response is None:
+                callback({"error": str(error)}, 0)
+                return
+            data = response.json()
+            if response.status_code == 200:
+                client.set_session(
+                    data["tokens"], customer=data.get("customer"), seller=data.get("seller")
+                )
+            callback(data, response.status_code)
+
+        client.post_async("/accounts/login/", on_response, data={
+            "username": username, "password": password
+        })
 
     @staticmethod
-    def get_by_id(user_id):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = "SELECT * FROM users WHERE id = %s"
-            cursor.execute(query, (user_id,))
-            return cursor.fetchone()
-        finally:
-            cursor.close()
-            conn.close()
+    def become_seller(store_name, phone, callback):
+        def on_response(response, error):
+            if error or response is None:
+                callback({"error": str(error)}, 0)
+                return
+            data = response.json()
+            if response.status_code == 201:
+                client.set_seller(data.get("seller"))
+            callback(data, response.status_code)
+
+        client.post_async("/accounts/become-seller/", on_response, data={
+            "store_name": store_name, "phone": phone or ""
+        })
 
     @staticmethod
-    def authenticate(username, password):
-        user = User.get_by_username(username)
-        if user is None:
-            return None
-
-        stored_hash = user["password_hash"]
-        if isinstance(stored_hash, str):
-            stored_hash = stored_hash.encode()
-
-        if bcrypt.checkpw(password.encode(), stored_hash):
-            return user
-        return None
+    def logout():
+        client.clear_session()

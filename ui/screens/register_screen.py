@@ -7,7 +7,6 @@ from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle
 
 from models.user import User
-from models.customer import Customer
 
 
 class RegisterScreen(Screen):
@@ -21,24 +20,14 @@ class RegisterScreen(Screen):
 
         outer = BoxLayout(orientation="vertical", padding=30, spacing=10)
 
-        title = Label(
-            text="Create Account",
-            font_size="26sp",
-            color=(0.2, 0.3, 0.6, 1),
-            size_hint=(1, 0.15)
-        )
+        title = Label(text="Create Account", font_size="26sp", color=(0.2, 0.3, 0.6, 1), size_hint=(1, 0.15))
         outer.add_widget(title)
 
         scroll = ScrollView(size_hint=(1, 0.75))
         form = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None, padding=[0, 10, 0, 10])
         form.bind(minimum_height=form.setter("height"))
 
-        input_style = {
-            "multiline": False,
-            "size_hint_y": None,
-            "height": 50,
-            "padding": [15, 15, 15, 15]
-        }
+        input_style = {"multiline": False, "size_hint_y": None, "height": 50, "padding": [15, 15, 15, 15]}
 
         self.username_input = TextInput(hint_text="Username", **input_style)
         self.password_input = TextInput(hint_text="Password", password=True, **input_style)
@@ -47,39 +36,26 @@ class RegisterScreen(Screen):
         self.address_input = TextInput(hint_text="Address", **input_style)
         self.phone_input = TextInput(hint_text="Phone", **input_style)
 
-        for widget in (
-            self.username_input, self.password_input, self.email_input,
-            self.fullname_input, self.address_input, self.phone_input
-        ):
+        for widget in (self.username_input, self.password_input, self.email_input,
+                       self.fullname_input, self.address_input, self.phone_input):
             form.add_widget(widget)
 
         scroll.add_widget(form)
         outer.add_widget(scroll)
 
-        self.message_label = Label(
-            text="",
-            color=(0.8, 0.2, 0.2, 1),
-            size_hint=(1, 0.1)
-        )
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1))
         outer.add_widget(self.message_label)
 
-        register_button = Button(
-            text="Register",
-            size_hint=(1, 0.15),
-            background_color=(0.3, 0.7, 0.4, 1),
-            background_normal="",
-            color=(1, 1, 1, 1),
-            font_size="18sp"
+        self.register_button = Button(
+            text="Register", size_hint=(1, 0.15),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="18sp"
         )
-        register_button.bind(on_press=self.on_register)
-        outer.add_widget(register_button)
+        self.register_button.bind(on_press=self.on_register)
+        outer.add_widget(self.register_button)
 
         login_link = Button(
-            text="Have an account? Login",
-            size_hint=(1, 0.1),
-            background_color=(0, 0, 0, 0),
-            background_normal="",
-            color=(0.3, 0.4, 0.7, 1)
+            text="Have an account? Login", size_hint=(1, 0.1),
+            background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1)
         )
         login_link.bind(on_press=self.go_to_login)
         outer.add_widget(login_link)
@@ -106,28 +82,31 @@ class RegisterScreen(Screen):
             self.message_label.text = error
             return
 
-        try:
-            user_id = User.create(
-                username=self.username_input.text.strip(),
-                password=self.password_input.text,
-                email=self.email_input.text.strip() or None,
-                phone=self.phone_input.text.strip() or None
-            )
+        self.register_button.disabled = True
+        self.message_label.color = (0.3, 0.3, 0.3, 1)
+        self.message_label.text = "Registering..."
 
-            Customer.create(
-                user_id=user_id,
-                full_name=self.fullname_input.text.strip(),
-                address=self.address_input.text.strip() or None,
-                phone=self.phone_input.text.strip() or None
-            )
+        User.register(
+            username=self.username_input.text.strip(),
+            password=self.password_input.text,
+            full_name=self.fullname_input.text.strip(),
+            email=self.email_input.text.strip(),
+            phone=self.phone_input.text.strip(),
+            address=self.address_input.text.strip(),
+            callback=self.on_register_result
+        )
 
-            self.message_label.color = (0.2, 0.6, 0.3, 1)
-            self.message_label.text = "Registration successful! Please login"
-            self.manager.current = "login"
+    def on_register_result(self, data, status_code):
+        self.register_button.disabled = False
 
-        except Exception as e:
+        if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = f"Registration error: {e}"
+            self.message_label.text = str(data)
+            return
+
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
+        self.message_label.text = "Registration successful!"
+        self.manager.current = "product_list"
 
     def go_to_login(self, instance):
         self.manager.current = "login"

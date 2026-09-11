@@ -1,103 +1,50 @@
-from db.connection import get_connection
+from api import client
 
 
 class Order:
     @staticmethod
-    def create(customer_id, seller_id, items):
-        conn = get_connection()
-        cursor = conn.cursor()
-        try:
-            total_amount = sum(item["quantity"] * item["unit_price"] for item in items)
+    def get_all(callback):
+        def on_response(response, error):
+            if error or response is None or response.status_code != 200:
+                callback([])
+                return
+            callback(response.json())
 
-            order_query = (
-                "INSERT INTO orders (customer_id, seller_id, total_amount, status) "
-                "VALUES (%s, %s, %s, %s)"
-            )
-            cursor.execute(order_query, (customer_id, seller_id, total_amount, "pending"))
-            order_id = cursor.lastrowid
-
-            item_query = (
-                "INSERT INTO order_item (order_id, product_id, quantity, unit_price) "
-                "VALUES (%s, %s, %s, %s)"
-            )
-            for item in items:
-                cursor.execute(
-                    item_query,
-                    (order_id, item["product_id"], item["quantity"], item["unit_price"])
-                )
-
-            conn.commit()
-            return order_id
-        except Exception:
-            conn.rollback()
-            raise
-        finally:
-            cursor.close()
-            conn.close()
+        client.get_async("/orders/", on_response)
 
     @staticmethod
-    def get_by_customer(customer_id):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = "SELECT * FROM orders WHERE customer_id = %s ORDER BY order_date DESC"
-            cursor.execute(query, (customer_id,))
-            return cursor.fetchall()
-        finally:
-            cursor.close()
-            conn.close()
+    def create(callback):
+        def on_response(response, error):
+            if error or response is None:
+                callback({"error": str(error)}, 0)
+                return
+            callback(response.json(), response.status_code)
+
+        client.post_async("/orders/create/", on_response)
 
     @staticmethod
-    def get_by_seller(seller_id):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = "SELECT * FROM orders WHERE seller_id = %s ORDER BY order_date DESC"
-            cursor.execute(query, (seller_id,))
-            return cursor.fetchall()
-        finally:
-            cursor.close()
-            conn.close()
+    def get_seller_orders(callback):
+        def on_response(response, error):
+            if error or response is None or response.status_code != 200:
+                callback([])
+                return
+            callback(response.json())
+
+        client.get_async("/orders/seller/", on_response)
 
     @staticmethod
-    def get_items(order_id):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = (
-                "SELECT order_item.id, order_item.quantity, order_item.unit_price, "
-                "products.id AS product_id, products.name, products.image_path "
-                "FROM order_item "
-                "JOIN products ON order_item.product_id = products.id "
-                "WHERE order_item.order_id = %s"
-            )
-            cursor.execute(query, (order_id,))
-            return cursor.fetchall()
-        finally:
-            cursor.close()
-            conn.close()
+    def update_status(order_id, new_status, callback):
+        def on_response(response, error):
+            if error or response is None:
+                callback({"error": str(error)}, 0)
+                return
+            callback(response.json(), response.status_code)
+
+        client.patch_async(f"/orders/{order_id}/status/", on_response, data={"status": new_status})
 
     @staticmethod
-    def update_status(order_id, new_status):
-        conn = get_connection()
-        cursor = conn.cursor()
-        try:
-            query = "UPDATE orders SET status = %s WHERE id = %s"
-            cursor.execute(query, (new_status, order_id))
-            conn.commit()
-            return cursor.rowcount
-        finally:
-            cursor.close()
-            conn.close()
+    def delete(order_id, callback):
+        def on_response(response, error):
+            callback(response is not None and response.status_code == 204)
 
-    @staticmethod
-    def get_by_id(order_id):
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        try:
-            query = "SELECT * FROM orders WHERE id = %s"
-            cursor.execute(query, (order_id,))
-            return cursor.fetchone()
-        finally:
-            cursor.close()
-            conn.close()
+        client.delete_async(f"/orders/{order_id}/", on_response)

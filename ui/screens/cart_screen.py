@@ -1,4 +1,3 @@
-from kivy.app import App
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -7,6 +6,7 @@ from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle, RoundedRectangle
 
 from models.cart import CartItem
+from api import client
 
 
 class CartRow(BoxLayout):
@@ -22,45 +22,16 @@ class CartRow(BoxLayout):
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
-        name_label = Label(
-            text=item["name"],
-            color=(0.1, 0.1, 0.1, 1),
-            font_size="15sp",
-            bold=True
-        )
-        price_label = Label(
-            text=f"${item['price']} x {item['quantity']}",
-            color=(0.4, 0.4, 0.4, 1),
-            font_size="13sp"
-        )
-        info.add_widget(name_label)
-        info.add_widget(price_label)
+        info.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="15sp", bold=True))
+        info.add_widget(Label(text=f"${item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="13sp"))
 
-        minus_button = Button(
-            text="-",
-            size_hint=(0.12, 1),
-            background_color=(0.85, 0.85, 0.85, 1),
-            background_normal="",
-            color=(0.1, 0.1, 0.1, 1)
-        )
+        minus_button = Button(text="-", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
         minus_button.bind(on_press=lambda instance: on_quantity_change(item, -1))
 
-        plus_button = Button(
-            text="+",
-            size_hint=(0.12, 1),
-            background_color=(0.85, 0.85, 0.85, 1),
-            background_normal="",
-            color=(0.1, 0.1, 0.1, 1)
-        )
+        plus_button = Button(text="+", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
         plus_button.bind(on_press=lambda instance: on_quantity_change(item, 1))
 
-        remove_button = Button(
-            text="Remove",
-            size_hint=(0.26, 1),
-            background_color=(0.9, 0.3, 0.3, 1),
-            background_normal="",
-            color=(1, 1, 1, 1)
-        )
+        remove_button = Button(text="Remove", size_hint=(0.26, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
         remove_button.bind(on_press=lambda instance: on_remove(item))
 
         self.add_widget(info)
@@ -85,29 +56,13 @@ class CartScreen(Screen):
         outer = BoxLayout(orientation="vertical", padding=15, spacing=10)
 
         header = BoxLayout(size_hint=(1, 0.08))
-        back_button = Button(
-            text="< Back",
-            size_hint=(0.3, 1),
-            background_color=(0, 0, 0, 0),
-            background_normal="",
-            color=(0.3, 0.4, 0.7, 1)
-        )
+        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
         back_button.bind(on_press=self.go_back)
-        title = Label(
-            text="My Cart",
-            font_size="22sp",
-            bold=True,
-            color=(0.2, 0.3, 0.6, 1)
-        )
         header.add_widget(back_button)
-        header.add_widget(title)
+        header.add_widget(Label(text="My Cart", font_size="22sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
         outer.add_widget(header)
 
-        self.message_label = Label(
-            text="",
-            color=(0.8, 0.2, 0.2, 1),
-            size_hint=(1, 0.06)
-        )
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.06))
         outer.add_widget(self.message_label)
 
         scroll = ScrollView(size_hint=(1, 0.68))
@@ -116,22 +71,12 @@ class CartScreen(Screen):
         scroll.add_widget(self.items_layout)
         outer.add_widget(scroll)
 
-        self.total_label = Label(
-            text="Total: $0",
-            font_size="18sp",
-            bold=True,
-            color=(0.1, 0.1, 0.1, 1),
-            size_hint=(1, 0.08)
-        )
+        self.total_label = Label(text="Total: $0", font_size="18sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.08))
         outer.add_widget(self.total_label)
 
         checkout_button = Button(
-            text="Checkout",
-            size_hint=(1, 0.1),
-            background_color=(0.3, 0.7, 0.4, 1),
-            background_normal="",
-            color=(1, 1, 1, 1),
-            font_size="17sp"
+            text="Checkout", size_hint=(1, 0.1),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
         )
         checkout_button.bind(on_press=self.go_to_checkout)
         outer.add_widget(checkout_button)
@@ -149,46 +94,35 @@ class CartScreen(Screen):
         self.items_layout.clear_widgets()
         self.message_label.text = ""
 
-        app = App.get_running_app()
-        customer = app.current_customer
-
-        if customer is None:
+        if not client.is_logged_in():
             self.message_label.text = "Please login first"
             self.total_label.text = "Total: $0"
             return
 
-        cart_items = CartItem.get_cart(customer["id"])
+        self.message_label.text = "Loading..."
+        CartItem.get_cart(self.on_cart_loaded)
+
+    def on_cart_loaded(self, cart_items):
+        self.message_label.text = ""
+        self.items_layout.clear_widgets()
 
         total = 0
         for item in cart_items:
-            row = CartRow(
-                item=item,
-                on_remove=self.remove_item,
-                on_quantity_change=self.change_quantity
-            )
+            row = CartRow(item=item, on_remove=self.remove_item, on_quantity_change=self.change_quantity)
             self.items_layout.add_widget(row)
             total += float(item["price"]) * item["quantity"]
 
         self.total_label.text = f"Total: ${total:.2f}"
 
     def remove_item(self, item):
-        try:
-            CartItem.remove(item["id"])
-            self.load_cart()
-        except Exception as e:
-            self.message_label.text = f"Error: {e}"
+        CartItem.remove(item["id"], lambda success: self.load_cart())
 
     def change_quantity(self, item, delta):
         new_quantity = item["quantity"] + delta
         if new_quantity < 1:
             self.remove_item(item)
             return
-
-        try:
-            CartItem.update_quantity(item["id"], new_quantity)
-            self.load_cart()
-        except Exception as e:
-            self.message_label.text = f"Error: {e}"
+        CartItem.update_quantity(item["id"], new_quantity, lambda data, status_code: self.load_cart())
 
     def go_to_checkout(self, instance):
         self.manager.current = "checkout"
