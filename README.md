@@ -1,115 +1,119 @@
 # DigiShop
 
-A local desktop e-commerce app built with **Kivy** (UI) and **MySQL** (database), written in Python.
+A mobile marketplace app built with **Kivy** (Python), backed by a **Django REST API** and **PostgreSQL** database. Users can browse products, manage a shopping cart, place orders, and sell their own products — all from a single cross-platform app (desktop or Android APK).
 
-DigiShop lets users register as customers, browse products, add items to a cart, and place orders. Any user can also become a seller and list their own products for sale.
+## Architecture
+
+[Kivy App (Desktop / APK)]
+│ HTTPS + JWT
+▼
+- [Django REST API] ──────► [PostgreSQL (hosted on Render)]
+- The Kivy app never talks to the database directly — it only communicates with the Django API over HTTP.
+- Authentication is handled with **JWT** (access + refresh tokens).
+- The backend is deployed on **Render**; the database is a managed **PostgreSQL** instance also on Render.
 
 ## Features
 
-- User registration and login (with session persistence — stay logged in between app restarts)
-- Browse products in a card-based, scrollable grid
-- Search products by name
-- Filter products by price range
-- View product details and adjust quantity before adding to cart
-- Shopping cart (update quantity, remove items)
-- Checkout — automatically splits an order per seller if the cart contains products from multiple sellers
-- Become a seller and add new products
-- Logout
+- User registration & login (JWT-based)
+- Browse products with search and price filters
+- Product detail view with quantity selector
+- Shopping cart (add / update quantity / remove)
+- Checkout — automatically splits an order per seller if the cart contains items from multiple sellers
+- Become a seller, add products (with real image upload)
+- Sellers can view, edit, and delete their own products
+- Sellers can view their incoming orders and update order status (pending / confirmed / shipped / delivered / cancelled) or delete an order
 
 ## Project Structure
 
-```
 digishop/
-├── db/
-│   └── connection.py       # MySQL connection handling
-├── models/
-│   ├── user.py
-│   ├── customer.py
-│   ├── seller.py
-│   ├── product.py
-│   ├── cart.py
-│   └── order.py
+├── main.py # Kivy app entry point
+├── requirements.txt # Kivy app dependencies
+├── buildozer.spec # Android build configuration
+│
+├── api/
+│ └── client.py # HTTP client, token/session management
+│
+├── models/ # API-backed data layer (no direct DB access)
+│ ├── user.py
+│ ├── product.py
+│ ├── cart.py
+│ └── order.py
+│
 ├── ui/
-│   ├── screens/
-│   │   ├── login_screen.py
-│   │   ├── register_screen.py
-│   │   ├── product_list_screen.py
-│   │   ├── product_detail_screen.py
-│   │   ├── cart_screen.py
-│   │   ├── checkout_screen.py
-│   │   ├── become_seller_screen.py
-│   │   └── add_product_screen.py
-│   └── app.py               # ScreenManager and app entry point
-├── schema.sql                # Database schema
+│ ├── app.py # ScreenManager setup
+│ └── screens/ # One file per screen
+│
+├── .github/workflows/
+│ └── build-apk.yml # CI: builds an Android APK on every push
+│
+└── backend/ # Django REST API project
+├── manage.py
 ├── requirements.txt
-├── .env.example
-└── main.py                   # Run this to start the app
-```
+├── runtime.txt # Pinned Python version for Render
+├── digishop_backend/ # Django project settings
+├── accounts/ # User, Customer, Seller + JWT auth
+├── products/ # Product CRUD
+├── cart/ # Cart management
+└── orders/ # Order creation & seller order management
 
-## Prerequisites
-
-- Python 3.8+
-- MySQL Server (running locally or accessible remotely)
-
-## Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/Barman-Zarei/digishop.git
-   cd digishop
-   ```
-
-2. **Install dependencies**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Create the database**
-
-   Log into MySQL and run the schema file:
-
-   ```bash
-   mysql -u root -p < schema.sql
-   ```
-
-   This creates a `digishop` database with all required tables.
-
-4. **Configure environment variables**
-
-   Copy the example env file and fill in your MySQL credentials:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env`:
-
-   ```
-   DB_HOST=localhost
-   DB_USER=your_user_name_here
-   DB_PASSWORD=your_password_here
-   DB_NAME=digishop
-   ```
-
-## Running the App
-
-From the project root:
-
-```bash
-python main.py
-```
 
 ## Tech Stack
 
-- **Kivy** — cross-platform GUI framework
-- **MySQL** — relational database
-- **mysql-connector-python** — MySQL driver for Python
-- **python-dotenv** — loads environment variables from `.env`
-- **bcrypt** — password hashing
+| Layer | Technology |
+|---|---|
+| Frontend | Python, Kivy |
+| Backend | Django, Django REST Framework |
+| Auth | JWT (djangorestframework-simplejwt) |
+| Database | PostgreSQL |
+| Hosting | Render |
+| Mobile build | Buildozer + GitHub Actions |
 
-## Notes
+## Setup — Backend
 
-- `.env` and `session.json` are excluded from version control (see `.gitignore`) since they contain sensitive/local data.
-- Passwords are hashed with bcrypt before being stored — plain-text passwords are never saved.
+1. Navigate to the backend folder:
+```bash
+   cd backend
+```
+2. Install dependencies:
+```bash
+   pip install -r requirements.txt
+```
+3. Copy the example config and fill in your own values:
+```bash
+   cp digishop_backend/config.example.py digishop_backend/config.py
+```
+4. Run migrations:
+```bash
+   python manage.py migrate
+```
+5. Start the development server:
+```bash
+   python manage.py runserver
+```
+
+## Setup — Kivy App
+
+1. From the project root, install dependencies:
+```bash
+   pip install -r requirements.txt
+```
+2. In `api/client.py`, set `API_BASE_URL` to your backend's address (local or deployed).
+3. Run the app:
+```bash
+   python main.py
+```
+
+## Building the Android APK
+
+Every push to `master` triggers a GitHub Actions workflow (`.github/workflows/build-apk.yml`) that builds a debug APK using Buildozer. Once the workflow finishes, download the APK from the **Actions** tab under that run's artifacts.
+
+## Security Notes
+
+- The Kivy app / APK never stores database credentials — it only knows the public API URL.
+- Database credentials and the Django secret key are kept in environment variables on Render (or a local `config.py`, which is git-ignored) — never committed to the repository.
+- All protected endpoints require a valid JWT access token.
+
+## Known Limitations
+
+- Render's free tier does not provide persistent file storage, so uploaded product images may be cleared on server restarts.
+- Sessions are kept in memory only (not persisted to disk), so the app requires a fresh login each time it's restarted.
