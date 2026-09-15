@@ -30,6 +30,10 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      - name: Ensure assets folder exists
+        shell: bash
+        run: mkdir -p assets
+
       - name: Install Linux system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -45,7 +49,7 @@ jobs:
       - name: Install Windows Kivy dependencies
         if: runner.os == 'Windows'
         run: |
-          pip install kivy_deps.sdl2 kivy_deps.glew kivy_deps.angle
+          pip install kivy_deps.sdl2 kivy_deps.glew
 
       - name: Build executable
         run: |
