@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -11,27 +13,27 @@ from api import client
 
 class CartRow(BoxLayout):
     def __init__(self, item, on_remove, on_quantity_change, **kwargs):
-        super().__init__(orientation="horizontal", padding=10, spacing=10, **kwargs)
+        super().__init__(orientation="horizontal", padding=dp(10), spacing=dp(10), **kwargs)
         self.item = item
         self.size_hint_y = None
-        self.height = 80
+        self.height = dp(80)
 
         with self.canvas.before:
             Color(1, 1, 1, 1)
-            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[10])
+            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[dp(10)])
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
-        info.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="15sp", bold=True))
-        info.add_widget(Label(text=f"${item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="13sp"))
+        info.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
+        info.add_widget(Label(text=f"${item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="12sp"))
 
-        minus_button = Button(text="-", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
+        minus_button = Button(text="-", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
         minus_button.bind(on_press=lambda instance: on_quantity_change(item, -1))
 
-        plus_button = Button(text="+", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
+        plus_button = Button(text="+", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
         plus_button.bind(on_press=lambda instance: on_quantity_change(item, 1))
 
-        remove_button = Button(text="Remove", size_hint=(0.26, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
+        remove_button = Button(text="Remove", size_hint=(0.26, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         remove_button.bind(on_press=lambda instance: on_remove(item))
 
         self.add_widget(info)
@@ -53,30 +55,30 @@ class CartScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=15, spacing=10)
+        outer = BoxLayout(orientation="vertical", padding=dp(15), spacing=dp(10))
 
-        header = BoxLayout(size_hint=(1, 0.08))
-        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44))
+        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp")
         back_button.bind(on_press=self.go_back)
         header.add_widget(back_button)
-        header.add_widget(Label(text="My Cart", font_size="22sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
+        header.add_widget(Label(text="My Cart", font_size="18sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
         outer.add_widget(header)
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.06))
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
-        scroll = ScrollView(size_hint=(1, 0.68))
-        self.items_layout = BoxLayout(orientation="vertical", spacing=10, size_hint_y=None, padding=[0, 5, 0, 5])
+        scroll = ScrollView(size_hint=(1, 1))
+        self.items_layout = BoxLayout(orientation="vertical", spacing=dp(10), size_hint_y=None, padding=[0, dp(5), 0, dp(5)])
         self.items_layout.bind(minimum_height=self.items_layout.setter("height"))
         scroll.add_widget(self.items_layout)
         outer.add_widget(scroll)
 
-        self.total_label = Label(text="Total: $0", font_size="18sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.08))
+        self.total_label = Label(text="Total: $0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
         outer.add_widget(self.total_label)
 
         checkout_button = Button(
-            text="Checkout", size_hint=(1, 0.1),
-            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
+            text="Checkout", size_hint=(1, None), height=dp(50),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
         checkout_button.bind(on_press=self.go_to_checkout)
         outer.add_widget(checkout_button)

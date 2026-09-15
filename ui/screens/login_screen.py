@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
@@ -17,27 +19,33 @@ class LoginScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        layout = BoxLayout(orientation="vertical", padding=40, spacing=15)
+        layout = BoxLayout(orientation="vertical", padding=dp(40), spacing=dp(15))
 
         title = Label(
             text="Welcome to DigiShop", font_size="28sp",
             color=(0.2, 0.3, 0.6, 1), size_hint=(1, 0.3)
         )
 
-        self.username_input = TextInput(hint_text="Username", multiline=False, size_hint=(1, 0.12), padding=[15, 15, 15, 15])
-        self.password_input = TextInput(hint_text="Password", multiline=False, password=True, size_hint=(1, 0.12), padding=[15, 15, 15, 15])
+        self.username_input = TextInput(
+            hint_text="Username", multiline=False, size_hint=(1, None),
+            height=dp(56), padding=[dp(15)] * 4, font_size="16sp"
+        )
+        self.password_input = TextInput(
+            hint_text="Password", multiline=False, password=True, size_hint=(1, None),
+            height=dp(56), padding=[dp(15)] * 4, font_size="16sp"
+        )
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1))
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1), font_size="14sp")
 
         self.login_button = Button(
-            text="Login", size_hint=(1, 0.15),
+            text="Login", size_hint=(1, None), height=dp(50),
             background_color=(0.3, 0.5, 0.9, 1), background_normal="", color=(1, 1, 1, 1), font_size="18sp"
         )
         self.login_button.bind(on_press=self.on_login)
 
         register_link = Button(
-            text="No account? Register", size_hint=(1, 0.1),
-            background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1)
+            text="No account? Register", size_hint=(1, None), height=dp(44),
+            background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp"
         )
         register_link.bind(on_press=self.go_to_register)
 

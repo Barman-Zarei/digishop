@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
@@ -17,27 +19,27 @@ class BecomeSellerScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=30, spacing=15)
+        outer = BoxLayout(orientation="vertical", padding=dp(30), spacing=dp(15))
 
-        header = BoxLayout(size_hint=(1, 0.1))
-        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44))
+        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp")
         back_button.bind(on_press=self.go_back)
         header.add_widget(back_button)
-        header.add_widget(Label(text="Become a Seller", font_size="22sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
+        header.add_widget(Label(text="Become a Seller", font_size="18sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
         outer.add_widget(header)
 
-        self.store_name_input = TextInput(hint_text="Store Name", multiline=False, size_hint=(1, 0.12), padding=[15, 15, 15, 15])
-        self.phone_input = TextInput(hint_text="Phone", multiline=False, size_hint=(1, 0.12), padding=[15, 15, 15, 15])
+        self.store_name_input = TextInput(hint_text="Store Name", multiline=False, size_hint=(1, None), height=dp(56), padding=[dp(15)] * 4, font_size="16sp")
+        self.phone_input = TextInput(hint_text="Phone", multiline=False, size_hint=(1, None), height=dp(56), padding=[dp(15)] * 4, font_size="16sp")
 
         outer.add_widget(self.store_name_input)
         outer.add_widget(self.phone_input)
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1))
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
         self.submit_button = Button(
-            text="Become a Seller", size_hint=(1, 0.15),
-            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
+            text="Become a Seller", size_hint=(1, None), height=dp(52),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
         self.submit_button.bind(on_press=self.on_submit)
         outer.add_widget(self.submit_button)

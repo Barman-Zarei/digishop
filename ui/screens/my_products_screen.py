@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -12,27 +14,27 @@ from models.product import Product
 
 class MyProductRow(BoxLayout):
     def __init__(self, product, on_edit, on_delete, **kwargs):
-        super().__init__(orientation="horizontal", padding=10, spacing=10, **kwargs)
+        super().__init__(orientation="horizontal", padding=dp(10), spacing=dp(10), **kwargs)
         self.product = product
         self.size_hint_y = None
-        self.height = 80
+        self.height = dp(80)
 
         with self.canvas.before:
             Color(1, 1, 1, 1)
-            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[10])
+            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[dp(10)])
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
-        info.add_widget(Label(text=product["name"], color=(0.1, 0.1, 0.1, 1), font_size="15sp", bold=True))
+        info.add_widget(Label(text=product["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
         info.add_widget(Label(
             text=f"${product['price']} - Stock: {product['stock_quantity']}",
-            color=(0.4, 0.4, 0.4, 1), font_size="13sp"
+            color=(0.4, 0.4, 0.4, 1), font_size="12sp"
         ))
 
-        edit_button = Button(text="Edit", size_hint=(0.25, 1), background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1))
+        edit_button = Button(text="Edit", size_hint=(0.25, 1), background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         edit_button.bind(on_press=lambda instance: on_edit(product))
 
-        delete_button = Button(text="Delete", size_hint=(0.25, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
+        delete_button = Button(text="Delete", size_hint=(0.25, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         delete_button.bind(on_press=lambda instance: on_delete(product))
 
         self.add_widget(info)
@@ -53,24 +55,23 @@ class MyProductsScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=15, spacing=10)
+        outer = BoxLayout(orientation="vertical", padding=dp(15), spacing=dp(10))
 
-        header = BoxLayout(size_hint=(1, 0.08))
-        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44))
+        back_button = Button(text="< Back", size_hint=(0.25, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="13sp")
         back_button.bind(on_press=self.go_back)
         header.add_widget(back_button)
-        header.add_widget(Label(text="My Products", font_size="20sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
-        outer.add_widget(header)
-        
-        add_button = Button(text="+ Add New", size_hint=(0.3, 1), background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1))
+        header.add_widget(Label(text="My Products", font_size="15sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
+        add_button = Button(text="+ Add New", size_hint=(0.32, 1), background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         add_button.bind(on_press=self.go_to_add_product)
         header.add_widget(add_button)
+        outer.add_widget(header)
 
-        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, 0.06))
+        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
-        scroll = ScrollView(size_hint=(1, 0.86))
-        self.products_layout = BoxLayout(orientation="vertical", spacing=10, size_hint_y=None, padding=[0, 5, 0, 5])
+        scroll = ScrollView(size_hint=(1, 1))
+        self.products_layout = BoxLayout(orientation="vertical", spacing=dp(10), size_hint_y=None, padding=[0, dp(5), 0, dp(5)])
         self.products_layout.bind(minimum_height=self.products_layout.setter("height"))
         scroll.add_widget(self.products_layout)
         outer.add_widget(scroll)
@@ -80,9 +81,6 @@ class MyProductsScreen(Screen):
     def update_bg(self, *args):
         self.bg_rect.size = self.size
         self.bg_rect.pos = self.pos
-
-    def go_to_add_product(self, instance):
-        self.manager.current = "add_product"
 
     def on_pre_enter(self, *args):
         self.load_products()
@@ -100,12 +98,12 @@ class MyProductsScreen(Screen):
             self.products_layout.add_widget(row)
 
     def open_edit_popup(self, product):
-        content = BoxLayout(orientation="vertical", spacing=10, padding=15)
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
 
-        name_input = TextInput(text=product["name"], multiline=False, size_hint=(1, 0.2))
-        description_input = TextInput(text=product.get("description") or "", multiline=False, size_hint=(1, 0.2))
-        price_input = TextInput(text=str(product["price"]), multiline=False, input_filter="float", size_hint=(1, 0.2))
-        stock_input = TextInput(text=str(product["stock_quantity"]), multiline=False, input_filter="int", size_hint=(1, 0.2))
+        name_input = TextInput(text=product["name"], multiline=False, size_hint=(1, 0.2), font_size="14sp")
+        description_input = TextInput(text=product.get("description") or "", multiline=False, size_hint=(1, 0.2), font_size="14sp")
+        price_input = TextInput(text=str(product["price"]), multiline=False, input_filter="float", size_hint=(1, 0.2), font_size="14sp")
+        stock_input = TextInput(text=str(product["stock_quantity"]), multiline=False, input_filter="int", size_hint=(1, 0.2), font_size="14sp")
 
         content.add_widget(Label(text="Name", size_hint=(1, 0.08), color=(0.1, 0.1, 0.1, 1)))
         content.add_widget(name_input)
@@ -116,7 +114,7 @@ class MyProductsScreen(Screen):
         content.add_widget(Label(text="Stock", size_hint=(1, 0.08), color=(0.1, 0.1, 0.1, 1)))
         content.add_widget(stock_input)
 
-        buttons_row = BoxLayout(size_hint=(1, 0.2), spacing=10)
+        buttons_row = BoxLayout(size_hint=(1, 0.2), spacing=dp(10))
         save_button = Button(text="Save", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1))
         cancel_button = Button(text="Cancel", background_color=(0.8, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
         buttons_row.add_widget(save_button)
@@ -151,10 +149,10 @@ class MyProductsScreen(Screen):
         self.load_products()
 
     def confirm_delete(self, product):
-        content = BoxLayout(orientation="vertical", spacing=10, padding=15)
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
         content.add_widget(Label(text=f"Delete '{product['name']}'?", color=(0.1, 0.1, 0.1, 1)))
 
-        buttons_row = BoxLayout(size_hint=(1, 0.4), spacing=10)
+        buttons_row = BoxLayout(size_hint=(1, 0.4), spacing=dp(10))
         yes_button = Button(text="Yes, Delete", background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
         no_button = Button(text="Cancel", background_color=(0.6, 0.6, 0.6, 1), background_normal="", color=(1, 1, 1, 1))
         buttons_row.add_widget(yes_button)
@@ -183,4 +181,3 @@ class MyProductsScreen(Screen):
 
     def go_back(self, instance):
         self.manager.current = "product_list"
-

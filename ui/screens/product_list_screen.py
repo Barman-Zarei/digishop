@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -16,28 +18,28 @@ from api import client
 
 class ProductCard(BoxLayout):
     def __init__(self, product, on_card_press, on_add_press, **kwargs):
-        super().__init__(orientation="vertical", padding=10, spacing=6, **kwargs)
+        super().__init__(orientation="vertical", padding=dp(10), spacing=dp(6), **kwargs)
         self.product = product
         self.size_hint_y = None
-        self.height = 260
+        self.height = dp(260)
 
         with self.canvas.before:
             Color(1, 1, 1, 1)
-            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[12])
+            self.bg_rect = RoundedRectangle(size=self.size, pos=self.pos, radius=[dp(12)])
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         image_path = product.get("image_path") or "assets/no_image.png"
         image = AsyncImage(source=image_path, size_hint=(1, 0.5), allow_stretch=True)
 
-        name_label = Label(text=product["name"], font_size="16sp", color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.15), bold=True)
-        price_label = Label(text=f"${product['price']}", font_size="15sp", color=(0.3, 0.5, 0.9, 1), size_hint=(1, 0.12))
+        name_label = Label(text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.15), bold=True)
+        price_label = Label(text=f"${product['price']}", font_size="14sp", color=(0.3, 0.5, 0.9, 1), size_hint=(1, 0.12))
 
-        buttons_row = BoxLayout(size_hint=(1, 0.23), spacing=6)
+        buttons_row = BoxLayout(size_hint=(1, 0.23), spacing=dp(6))
 
-        view_button = Button(text="View", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1))
+        view_button = Button(text="View", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="13sp")
         view_button.bind(on_press=lambda instance: on_card_press(product))
 
-        add_button = Button(text="Add to Cart", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1))
+        add_button = Button(text="Add to Cart", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="13sp")
         add_button.bind(on_press=lambda instance: on_add_press(product))
 
         buttons_row.add_widget(view_button)
@@ -62,17 +64,17 @@ class ProductListScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=15, spacing=10)
+        outer = BoxLayout(orientation="vertical", padding=dp(15), spacing=dp(10))
 
-        header = BoxLayout(size_hint=(1, 0.08), spacing=6)
-        title = Label(text="DigiShop", font_size="20sp", color=(0.2, 0.3, 0.6, 1), bold=True)
-        sell_button = Button(text="Sell", size_hint=(0.18, 1), background_color=(0.6, 0.4, 0.8, 1), background_normal="", color=(1, 1, 1, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44), spacing=dp(6))
+        title = Label(text="DigiShop", font_size="18sp", color=(0.2, 0.3, 0.6, 1), bold=True)
+        sell_button = Button(text="Sell", size_hint=(0.18, 1), background_color=(0.6, 0.4, 0.8, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         sell_button.bind(on_press=self.go_to_sell)
-        orders_button = Button(text="Orders", size_hint=(0.2, 1), background_color=(0.5, 0.5, 0.9, 1), background_normal="", color=(1, 1, 1, 1))
+        orders_button = Button(text="Orders", size_hint=(0.2, 1), background_color=(0.5, 0.5, 0.9, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         orders_button.bind(on_press=self.go_to_orders)
-        cart_button = Button(text="Cart", size_hint=(0.18, 1), background_color=(0.9, 0.6, 0.2, 1), background_normal="", color=(1, 1, 1, 1))
+        cart_button = Button(text="Cart", size_hint=(0.18, 1), background_color=(0.9, 0.6, 0.2, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         cart_button.bind(on_press=self.go_to_cart)
-        logout_button = Button(text="Logout", size_hint=(0.18, 1), background_color=(0.8, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
+        logout_button = Button(text="Logout", size_hint=(0.18, 1), background_color=(0.8, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         logout_button.bind(on_press=self.on_logout)
         header.add_widget(title)
         header.add_widget(sell_button)
@@ -81,20 +83,20 @@ class ProductListScreen(Screen):
         header.add_widget(logout_button)
         outer.add_widget(header)
 
-        search_row = BoxLayout(size_hint=(1, 0.08), spacing=6)
-        self.search_input = TextInput(hint_text="Search products...", multiline=False, padding=[15, 12, 15, 12])
+        search_row = BoxLayout(size_hint=(1, None), height=dp(48), spacing=dp(6))
+        self.search_input = TextInput(hint_text="Search products...", multiline=False, padding=[dp(15), dp(12)], font_size="14sp")
         self.search_input.bind(on_text_validate=self.on_search_submit)
         search_row.add_widget(self.search_input)
         outer.add_widget(search_row)
 
-        filter_row = BoxLayout(size_hint=(1, 0.08), spacing=6)
-        all_button = Button(text="All", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1))
+        filter_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(6))
+        all_button = Button(text="All", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         all_button.bind(on_press=self.clear_filter)
-        low_price_button = Button(text="Under $50", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1))
+        low_price_button = Button(text="Under $50", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         low_price_button.bind(on_press=lambda instance: self.filter_by_price(0, 50))
-        mid_price_button = Button(text="$50-$200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1))
+        mid_price_button = Button(text="$50-$200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         mid_price_button.bind(on_press=lambda instance: self.filter_by_price(50, 200))
-        high_price_button = Button(text="Over $200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1))
+        high_price_button = Button(text="Over $200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         high_price_button.bind(on_press=lambda instance: self.filter_by_price(200, None))
         filter_row.add_widget(all_button)
         filter_row.add_widget(low_price_button)
@@ -102,11 +104,11 @@ class ProductListScreen(Screen):
         filter_row.add_widget(high_price_button)
         outer.add_widget(filter_row)
 
-        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, 0.06))
+        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
-        scroll = ScrollView(size_hint=(1, 0.7))
-        self.grid = GridLayout(cols=2, spacing=12, padding=6, size_hint_y=None)
+        scroll = ScrollView(size_hint=(1, 1))
+        self.grid = GridLayout(cols=2, spacing=dp(12), padding=dp(6), size_hint_y=None)
         self.grid.bind(minimum_height=self.grid.setter("height"))
         scroll.add_widget(self.grid)
         outer.add_widget(scroll)

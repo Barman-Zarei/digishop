@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -21,30 +23,30 @@ class CheckoutScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=15, spacing=10)
+        outer = BoxLayout(orientation="vertical", padding=dp(15), spacing=dp(10))
 
-        header = BoxLayout(size_hint=(1, 0.08))
-        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44))
+        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp")
         back_button.bind(on_press=self.go_back)
         header.add_widget(back_button)
-        header.add_widget(Label(text="Checkout", font_size="22sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
+        header.add_widget(Label(text="Checkout", font_size="18sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
         outer.add_widget(header)
 
-        scroll = ScrollView(size_hint=(1, 0.68))
-        self.summary_layout = BoxLayout(orientation="vertical", spacing=8, size_hint_y=None, padding=[0, 5, 0, 5])
+        scroll = ScrollView(size_hint=(1, 1))
+        self.summary_layout = BoxLayout(orientation="vertical", spacing=dp(8), size_hint_y=None, padding=[0, dp(5), 0, dp(5)])
         self.summary_layout.bind(minimum_height=self.summary_layout.setter("height"))
         scroll.add_widget(self.summary_layout)
         outer.add_widget(scroll)
 
-        self.total_label = Label(text="Total: $0", font_size="18sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.08))
+        self.total_label = Label(text="Total: $0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
         outer.add_widget(self.total_label)
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.06))
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
         self.place_order_button = Button(
-            text="Place Order", size_hint=(1, 0.12),
-            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
+            text="Place Order", size_hint=(1, None), height=dp(52),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
         self.place_order_button.bind(on_press=self.place_order)
         outer.add_widget(self.place_order_button)
@@ -77,7 +79,7 @@ class CheckoutScreen(Screen):
         total = 0
         for item in cart_items:
             row_text = f"{item['name']}  x{item['quantity']}  -  ${float(item['price']) * item['quantity']:.2f}"
-            self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=30))
+            self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(30), font_size="13sp"))
             total += float(item["price"]) * item["quantity"]
 
         self.total_label.text = f"Total: ${total:.2f}"
@@ -109,7 +111,7 @@ class CheckoutScreen(Screen):
         self.show_confirmation_popup(order_ids)
 
     def show_confirmation_popup(self, order_ids):
-        content = BoxLayout(orientation="vertical", spacing=10, padding=15)
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
         content.add_widget(Label(
             text=f"Order placed successfully!\nOrder ID(s): {', '.join(str(i) for i in order_ids)}",
             color=(0.1, 0.1, 0.1, 1)

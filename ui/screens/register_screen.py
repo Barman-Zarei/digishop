@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
@@ -18,16 +20,22 @@ class RegisterScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=30, spacing=10)
+        outer = BoxLayout(orientation="vertical", padding=dp(30), spacing=dp(10))
 
         title = Label(text="Create Account", font_size="26sp", color=(0.2, 0.3, 0.6, 1), size_hint=(1, 0.15))
         outer.add_widget(title)
 
         scroll = ScrollView(size_hint=(1, 0.75))
-        form = BoxLayout(orientation="vertical", spacing=12, size_hint_y=None, padding=[0, 10, 0, 10])
+        form = BoxLayout(orientation="vertical", spacing=dp(12), size_hint_y=None, padding=[0, dp(10), 0, dp(10)])
         form.bind(minimum_height=form.setter("height"))
 
-        input_style = {"multiline": False, "size_hint_y": None, "height": 50, "padding": [15, 15, 15, 15]}
+        input_style = {
+            "multiline": False,
+            "size_hint_y": None,
+            "height": dp(56),
+            "padding": [dp(15), dp(15), dp(15), dp(15)],
+            "font_size": "16sp",
+        }
 
         self.username_input = TextInput(hint_text="Username", **input_style)
         self.password_input = TextInput(hint_text="Password", password=True, **input_style)

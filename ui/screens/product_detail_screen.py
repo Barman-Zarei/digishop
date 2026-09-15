@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -20,44 +22,44 @@ class ProductDetailScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=20, spacing=12)
+        outer = BoxLayout(orientation="vertical", padding=dp(20), spacing=dp(12))
 
-        back_button = Button(text="< Back", size_hint=(1, 0.08), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        back_button = Button(text="< Back", size_hint=(1, None), height=dp(40), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp")
         back_button.bind(on_press=self.go_back)
         outer.add_widget(back_button)
 
         self.image = AsyncImage(size_hint=(1, 0.4), allow_stretch=True)
         outer.add_widget(self.image)
 
-        self.name_label = Label(text="", font_size="22sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.1))
+        self.name_label = Label(text="", font_size="20sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(36))
         outer.add_widget(self.name_label)
 
-        self.price_label = Label(text="", font_size="18sp", color=(0.3, 0.5, 0.9, 1), size_hint=(1, 0.08))
+        self.price_label = Label(text="", font_size="17sp", color=(0.3, 0.5, 0.9, 1), size_hint=(1, None), height=dp(30))
         outer.add_widget(self.price_label)
 
-        self.description_label = Label(text="", font_size="14sp", color=(0.3, 0.3, 0.3, 1), size_hint=(1, 0.15))
+        self.description_label = Label(text="", font_size="13sp", color=(0.3, 0.3, 0.3, 1), size_hint=(1, 0.15))
         outer.add_widget(self.description_label)
 
-        self.stock_label = Label(text="", font_size="13sp", color=(0.5, 0.5, 0.5, 1), size_hint=(1, 0.06))
+        self.stock_label = Label(text="", font_size="12sp", color=(0.5, 0.5, 0.5, 1), size_hint=(1, None), height=dp(24))
         outer.add_widget(self.stock_label)
 
-        quantity_row = BoxLayout(size_hint=(1, 0.1), spacing=10)
-        minus_button = Button(text="-", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
+        quantity_row = BoxLayout(size_hint=(1, None), height=dp(48), spacing=dp(10))
+        minus_button = Button(text="-", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
         minus_button.bind(on_press=self.decrease_quantity)
-        self.quantity_label = Label(text="1", color=(0.1, 0.1, 0.1, 1))
-        plus_button = Button(text="+", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1))
+        self.quantity_label = Label(text="1", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
+        plus_button = Button(text="+", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
         plus_button.bind(on_press=self.increase_quantity)
         quantity_row.add_widget(minus_button)
         quantity_row.add_widget(self.quantity_label)
         quantity_row.add_widget(plus_button)
         outer.add_widget(quantity_row)
 
-        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, 0.06))
+        self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
         add_button = Button(
-            text="Add to Cart", size_hint=(1, 0.12),
-            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
+            text="Add to Cart", size_hint=(1, None), height=dp(52),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
         add_button.bind(on_press=self.add_to_cart)
         outer.add_widget(add_button)

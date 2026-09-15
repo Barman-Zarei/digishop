@@ -1,3 +1,5 @@
+from kivy.metrics import dp
+
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
@@ -20,39 +22,41 @@ class AddProductScreen(Screen):
             self.bg_rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self.update_bg, pos=self.update_bg)
 
-        outer = BoxLayout(orientation="vertical", padding=30, spacing=12)
+        outer = BoxLayout(orientation="vertical", padding=dp(30), spacing=dp(12))
 
-        header = BoxLayout(size_hint=(1, 0.1))
-        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1))
+        header = BoxLayout(size_hint=(1, None), height=dp(44))
+        back_button = Button(text="< Back", size_hint=(0.3, 1), background_color=(0, 0, 0, 0), background_normal="", color=(0.3, 0.4, 0.7, 1), font_size="14sp")
         back_button.bind(on_press=self.go_back)
         header.add_widget(back_button)
-        header.add_widget(Label(text="Add Product", font_size="22sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
+        header.add_widget(Label(text="Add Product", font_size="18sp", bold=True, color=(0.2, 0.3, 0.6, 1)))
         outer.add_widget(header)
 
-        self.name_input = TextInput(hint_text="Product Name", multiline=False, size_hint=(1, 0.1), padding=[15, 15, 15, 15])
-        self.description_input = TextInput(hint_text="Description", multiline=False, size_hint=(1, 0.1), padding=[15, 15, 15, 15])
-        self.price_input = TextInput(hint_text="Price", multiline=False, input_filter="float", size_hint=(1, 0.1), padding=[15, 15, 15, 15])
-        self.stock_input = TextInput(hint_text="Stock Quantity", multiline=False, input_filter="int", size_hint=(1, 0.1), padding=[15, 15, 15, 15])
+        input_style = {"multiline": False, "size_hint_y": None, "height": dp(50), "padding": [dp(15)] * 4, "font_size": "15sp"}
+
+        self.name_input = TextInput(hint_text="Product Name", **input_style)
+        self.description_input = TextInput(hint_text="Description", **input_style)
+        self.price_input = TextInput(hint_text="Price", input_filter="float", **input_style)
+        self.stock_input = TextInput(hint_text="Stock Quantity", input_filter="int", **input_style)
 
         outer.add_widget(self.name_input)
         outer.add_widget(self.description_input)
         outer.add_widget(self.price_input)
         outer.add_widget(self.stock_input)
 
-        image_row = BoxLayout(size_hint=(1, 0.1), spacing=8)
-        pick_image_button = Button(text="Choose Image", background_color=(0.5, 0.5, 0.8, 1), background_normal="", color=(1, 1, 1, 1))
+        image_row = BoxLayout(size_hint=(1, None), height=dp(44), spacing=dp(8))
+        pick_image_button = Button(text="Choose Image", background_color=(0.5, 0.5, 0.8, 1), background_normal="", color=(1, 1, 1, 1), font_size="13sp")
         pick_image_button.bind(on_press=self.open_file_chooser)
-        self.image_status_label = Label(text="No image selected", color=(0.4, 0.4, 0.4, 1))
+        self.image_status_label = Label(text="No image selected", color=(0.4, 0.4, 0.4, 1), font_size="12sp")
         image_row.add_widget(pick_image_button)
         image_row.add_widget(self.image_status_label)
         outer.add_widget(image_row)
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.08))
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
         self.submit_button = Button(
-            text="Add Product", size_hint=(1, 0.15),
-            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="17sp"
+            text="Add Product", size_hint=(1, None), height=dp(52),
+            background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
         self.submit_button.bind(on_press=self.on_submit)
         outer.add_widget(self.submit_button)
@@ -64,11 +68,11 @@ class AddProductScreen(Screen):
         self.bg_rect.pos = self.pos
 
     def open_file_chooser(self, instance):
-        content = BoxLayout(orientation="vertical", spacing=10, padding=10)
+        content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(10))
         chooser = FileChooserListView(filters=["*.png", "*.jpg", "*.jpeg"])
         content.add_widget(chooser)
 
-        buttons_row = BoxLayout(size_hint=(1, 0.15), spacing=10)
+        buttons_row = BoxLayout(size_hint=(1, 0.15), spacing=dp(10))
         select_button = Button(text="Select", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1))
         cancel_button = Button(text="Cancel", background_color=(0.8, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))
         buttons_row.add_widget(select_button)
