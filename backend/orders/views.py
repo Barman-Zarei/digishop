@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from django.db import transaction
 
 from cart.models import CartItem
+from products.models import Product
 from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderStatusUpdateSerializer
 
@@ -25,7 +26,7 @@ def order_list_view(request):
 @permission_classes([IsAuthenticated])
 def order_create_view(request):
     customer = request.user.customer
-    cart_items = CartItem.objects.filter(customer=customer)
+    cart_items = CartItem.objects.filter(customer=customer).select_related("product")
 
     if not cart_items.exists():
         return Response({"error": "Your cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
@@ -37,6 +38,21 @@ def order_create_view(request):
     created_orders = []
 
     with transaction.atomic():
+        # Lock every product row before checking stock, so two customers
+        # checking out at the same instant can't both pass the check.
+        product_ids = [item.product_id for item in cart_items]
+        locked_products = {
+            p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)
+        }
+
+        for item in cart_items:
+            product = locked_products[item.product_id]
+            if item.quantity > product.stock_quantity:
+                return Response(
+                    {"error": f"'{product.name}' only has {product.stock_quantity} in stock"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         for seller_id, items in items_by_seller.items():
             total_amount = sum(item.product.price * item.quantity for item in items)
 
@@ -54,6 +70,9 @@ def order_create_view(request):
                     quantity=item.quantity,
                     unit_price=item.product.price
                 )
+                product = locked_products[item.product_id]
+                product.stock_quantity -= item.quantity
+                product.save()
 
             created_orders.append(order)
 

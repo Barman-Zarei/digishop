@@ -29,6 +29,16 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         model = Product
         fields = ["name", "description", "price", "stock_quantity", "image"]
 
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Price must be greater than 0")
+        return value
+
+    def validate_stock_quantity(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Stock quantity cannot be negative")
+        return value
+
     def create(self, validated_data):
         seller = self.context["request"].user.seller
         return Product.objects.create(seller=seller, **validated_data)
@@ -43,3 +53,13 @@ class ProductUpdateSerializer(serializers.ModelSerializer):
             "price": {"required": False},
             "stock_quantity": {"required": False},
         }
+
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Price must be greater than 0")
+        return value
+
+    def validate_stock_quantity(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Stock quantity cannot be negative")
+        return value

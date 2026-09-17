@@ -10,5 +10,8 @@ class CartItem(models.Model):
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
+    class Meta:
+        unique_together = ("customer", "product")
+
     def __str__(self):
         return f"{self.product.name} x{self.quantity}"

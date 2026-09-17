@@ -10,7 +10,7 @@ from .serializers import ProductSerializer, ProductCreateSerializer, ProductUpda
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def product_list_view(request):
-    products = Product.objects.all()
+    products = Product.objects.filter(is_active=True)
 
     search = request.query_params.get("search")
     if search:
@@ -32,7 +32,7 @@ def product_list_view(request):
 @permission_classes([AllowAny])
 def product_detail_view(request, product_id):
     try:
-        product = Product.objects.get(id=product_id)
+        product = Product.objects.get(id=product_id, is_active=True)
     except Product.DoesNotExist:
         return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -65,7 +65,7 @@ def seller_product_list_view(request):
     if not hasattr(request.user, "seller"):
         return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
 
-    products = Product.objects.filter(seller=request.user.seller)
+    products = Product.objects.filter(seller=request.user.seller, is_active=True)
     serializer = ProductSerializer(products, many=True, context={"request": request})
     return Response(serializer.data)
 
@@ -99,5 +99,9 @@ def product_delete_view(request, product_id):
     except Product.DoesNotExist:
         return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    product.delete()
+    # Soft delete: keeps past orders that reference this product intact,
+    # instead of hitting the on_delete=RESTRICT constraint on OrderItem.
+    product.is_active = False
+    product.save()
+
     return Response(status=status.HTTP_204_NO_CONTENT)
