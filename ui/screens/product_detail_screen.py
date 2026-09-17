@@ -44,25 +44,25 @@ class ProductDetailScreen(Screen):
         outer.add_widget(self.stock_label)
 
         quantity_row = BoxLayout(size_hint=(1, None), height=dp(48), spacing=dp(10))
-        minus_button = Button(text="-", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
-        minus_button.bind(on_press=self.decrease_quantity)
+        self.minus_button = Button(text="-", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
+        self.minus_button.bind(on_press=self.decrease_quantity)
         self.quantity_label = Label(text="1", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
-        plus_button = Button(text="+", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
-        plus_button.bind(on_press=self.increase_quantity)
-        quantity_row.add_widget(minus_button)
+        self.plus_button = Button(text="+", background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="18sp")
+        self.plus_button.bind(on_press=self.increase_quantity)
+        quantity_row.add_widget(self.minus_button)
         quantity_row.add_widget(self.quantity_label)
-        quantity_row.add_widget(plus_button)
+        quantity_row.add_widget(self.plus_button)
         outer.add_widget(quantity_row)
 
         self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
         outer.add_widget(self.message_label)
 
-        add_button = Button(
+        self.add_button = Button(
             text="Add to Cart", size_hint=(1, None), height=dp(52),
             background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="16sp"
         )
-        add_button.bind(on_press=self.add_to_cart)
-        outer.add_widget(add_button)
+        self.add_button.bind(on_press=self.add_to_cart)
+        outer.add_widget(self.add_button)
 
         self.add_widget(outer)
 
@@ -80,7 +80,15 @@ class ProductDetailScreen(Screen):
         self.name_label.text = product["name"]
         self.price_label.text = f"${product['price']}"
         self.description_label.text = product.get("description") or "No description available"
-        self.stock_label.text = f"In stock: {product['stock_quantity']}"
+
+        in_stock = product["stock_quantity"] > 0
+        self.stock_label.text = f"In stock: {product['stock_quantity']}" if in_stock else "Out of stock"
+        self.stock_label.color = (0.5, 0.5, 0.5, 1) if in_stock else (0.8, 0.2, 0.2, 1)
+
+        self.add_button.disabled = not in_stock
+        self.add_button.text = "Add to Cart" if in_stock else "Out of stock"
+        self.minus_button.disabled = not in_stock
+        self.plus_button.disabled = not in_stock
 
     def increase_quantity(self, instance):
         if self.product and self.quantity < self.product["stock_quantity"]:
@@ -98,12 +106,23 @@ class ProductDetailScreen(Screen):
             self.message_label.text = "Please login first"
             return
 
+        if not self.product or self.product["stock_quantity"] <= 0:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = "This product is out of stock"
+            return
+
+        self.add_button.disabled = True
+        self.message_label.color = (0.3, 0.3, 0.3, 1)
+        self.message_label.text = "Adding..."
+
         CartItem.add(self.product["id"], self.quantity, self.on_add_result)
 
     def on_add_result(self, data, status_code):
+        self.add_button.disabled = self.product is not None and self.product["stock_quantity"] <= 0
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data)
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", data))
             return
         self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Added to cart"

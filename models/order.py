@@ -5,10 +5,13 @@ class Order:
     @staticmethod
     def get_all(callback):
         def on_response(response, error):
-            if error or response is None or response.status_code != 200:
-                callback([])
+            if error:
+                callback([], "Network error — check your connection")
                 return
-            callback(response.json())
+            if response is None or response.status_code != 200:
+                callback([], "Could not load your orders")
+                return
+            callback(response.json(), None)
 
         client.get_async("/orders/", on_response)
 
@@ -16,7 +19,7 @@ class Order:
     def create(callback):
         def on_response(response, error):
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 
@@ -25,10 +28,13 @@ class Order:
     @staticmethod
     def get_seller_orders(callback):
         def on_response(response, error):
-            if error or response is None or response.status_code != 200:
-                callback([])
+            if error:
+                callback([], "Network error — check your connection")
                 return
-            callback(response.json())
+            if response is None or response.status_code != 200:
+                callback([], "Could not load orders")
+                return
+            callback(response.json(), None)
 
         client.get_async("/orders/seller/", on_response)
 
@@ -36,7 +42,7 @@ class Order:
     def update_status(order_id, new_status, callback):
         def on_response(response, error):
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 

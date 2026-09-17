@@ -86,10 +86,18 @@ class MyProductsScreen(Screen):
         self.load_products()
 
     def load_products(self):
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Loading..."
         Product.get_mine(self.on_products_loaded)
 
-    def on_products_loaded(self, products):
+    def on_products_loaded(self, products, error):
+        if error:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = error
+            self.products_layout.clear_widgets()
+            return
+
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "" if products else "You have no products yet"
         self.products_layout.clear_widgets()
 
@@ -104,6 +112,7 @@ class MyProductsScreen(Screen):
         description_input = TextInput(text=product.get("description") or "", multiline=False, size_hint=(1, 0.2), font_size="14sp")
         price_input = TextInput(text=str(product["price"]), multiline=False, input_filter="float", size_hint=(1, 0.2), font_size="14sp")
         stock_input = TextInput(text=str(product["stock_quantity"]), multiline=False, input_filter="int", size_hint=(1, 0.2), font_size="14sp")
+        popup_error_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1), font_size="12sp")
 
         content.add_widget(Label(text="Name", size_hint=(1, 0.08), color=(0.1, 0.1, 0.1, 1)))
         content.add_widget(name_input)
@@ -113,6 +122,7 @@ class MyProductsScreen(Screen):
         content.add_widget(price_input)
         content.add_widget(Label(text="Stock", size_hint=(1, 0.08), color=(0.1, 0.1, 0.1, 1)))
         content.add_widget(stock_input)
+        content.add_widget(popup_error_label)
 
         buttons_row = BoxLayout(size_hint=(1, 0.2), spacing=dp(10))
         save_button = Button(text="Save", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1))
@@ -121,15 +131,34 @@ class MyProductsScreen(Screen):
         buttons_row.add_widget(cancel_button)
         content.add_widget(buttons_row)
 
-        popup = Popup(title=f"Edit: {product['name']}", content=content, size_hint=(0.85, 0.7), auto_dismiss=False)
+        popup = Popup(title=f"Edit: {product['name']}", content=content, size_hint=(0.85, 0.75), auto_dismiss=False)
 
         def on_save(instance):
+            try:
+                price_value = float(price_input.text)
+            except ValueError:
+                popup_error_label.text = "Price must be a valid number"
+                return
+            if price_value <= 0:
+                popup_error_label.text = "Price must be greater than 0"
+                return
+
+            try:
+                stock_value = int(stock_input.text)
+            except ValueError:
+                popup_error_label.text = "Stock must be a valid number"
+                return
+            if stock_value < 0:
+                popup_error_label.text = "Stock cannot be negative"
+                return
+
+            save_button.disabled = True
             Product.update(
                 product["id"],
                 lambda data, status_code: self.on_update_result(data, status_code, popup),
                 name=name_input.text.strip(),
-                price=price_input.text,
-                stock_quantity=stock_input.text,
+                price=price_value,
+                stock_quantity=stock_value,
                 description=description_input.text.strip()
             )
 
@@ -142,7 +171,8 @@ class MyProductsScreen(Screen):
         popup.dismiss()
         if status_code != 200:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data)
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", "Could not update product"))
             return
         self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Product updated"
@@ -176,8 +206,11 @@ class MyProductsScreen(Screen):
             self.message_label.text = "Error deleting product"
             return
         self.message_label.color = (0.2, 0.6, 0.3, 1)
-        self.message_label.text = "Product deleted"
+        self.message_label.text = "Product removed from your store"
         self.load_products()
+
+    def go_to_add_product(self, instance):
+        self.manager.current = "add_product"
 
     def go_back(self, instance):
         self.manager.current = "product_list"

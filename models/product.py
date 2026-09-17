@@ -13,10 +13,16 @@ class Product:
             params["max_price"] = max_price
 
         def on_response(response, error):
-            if error or response is None or response.status_code != 200:
-                callback([])
+            if error:
+                callback([], "Network error — check your connection")
                 return
-            callback(response.json())
+            if response is None:
+                callback([], "No response from server")
+                return
+            if response.status_code != 200:
+                callback([], f"Server error ({response.status_code})")
+                return
+            callback(response.json(), None)
 
         client.get_async("/products/", on_response, params=params)
 
@@ -33,10 +39,13 @@ class Product:
     @staticmethod
     def get_mine(callback):
         def on_response(response, error):
-            if error or response is None or response.status_code != 200:
-                callback([])
+            if error:
+                callback([], "Network error — check your connection")
                 return
-            callback(response.json())
+            if response is None or response.status_code != 200:
+                callback([], "Could not load your products")
+                return
+            callback(response.json(), None)
 
         client.get_async("/products/mine/", on_response)
 
@@ -52,14 +61,18 @@ class Product:
         files = None
         opened_file = None
         if image_file_path:
-            opened_file = open(image_file_path, "rb")
-            files = {"image": opened_file}
+            try:
+                opened_file = open(image_file_path, "rb")
+                files = {"image": opened_file}
+            except OSError as e:
+                callback({"error": f"Could not open image file: {e}"}, 0)
+                return
 
         def on_response(response, error):
             if opened_file:
                 opened_file.close()
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 
@@ -79,7 +92,7 @@ class Product:
 
         def on_response(response, error):
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 

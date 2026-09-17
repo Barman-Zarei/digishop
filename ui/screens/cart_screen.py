@@ -27,10 +27,17 @@ class CartRow(BoxLayout):
         info.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
         info.add_widget(Label(text=f"${item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="12sp"))
 
+        at_max_stock = item["quantity"] >= item.get("stock_quantity", item["quantity"])
+
         minus_button = Button(text="-", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
         minus_button.bind(on_press=lambda instance: on_quantity_change(item, -1))
 
-        plus_button = Button(text="+", size_hint=(0.12, 1), background_color=(0.85, 0.85, 0.85, 1), background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="16sp")
+        plus_button = Button(
+            text="+", size_hint=(0.12, 1),
+            background_color=(0.75, 0.75, 0.75, 1) if at_max_stock else (0.85, 0.85, 0.85, 1),
+            background_normal="", color=(0.1, 0.1, 0.1, 1), font_size="16sp",
+            disabled=at_max_stock
+        )
         plus_button.bind(on_press=lambda instance: on_quantity_change(item, 1))
 
         remove_button = Button(text="Remove", size_hint=(0.26, 1), background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
@@ -94,19 +101,27 @@ class CartScreen(Screen):
 
     def load_cart(self):
         self.items_layout.clear_widgets()
-        self.message_label.text = ""
 
         if not client.is_logged_in():
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = "Please login first"
             self.total_label.text = "Total: $0"
             return
 
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Loading..."
         CartItem.get_cart(self.on_cart_loaded)
 
-    def on_cart_loaded(self, cart_items):
-        self.message_label.text = ""
+    def on_cart_loaded(self, cart_items, error):
         self.items_layout.clear_widgets()
+
+        if error:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = error
+            self.total_label.text = "Total: $0"
+            return
+
+        self.message_label.text = ""
 
         total = 0
         for item in cart_items:
@@ -124,7 +139,15 @@ class CartScreen(Screen):
         if new_quantity < 1:
             self.remove_item(item)
             return
-        CartItem.update_quantity(item["id"], new_quantity, lambda data, status_code: self.load_cart())
+
+        def on_result(data, status_code):
+            if status_code != 200:
+                self.message_label.color = (0.8, 0.2, 0.2, 1)
+                error_data = data if isinstance(data, dict) else {}
+                self.message_label.text = str(error_data.get("error", "Could not update quantity"))
+            self.load_cart()
+
+        CartItem.update_quantity(item["id"], new_quantity, on_result)
 
     def go_to_checkout(self, instance):
         self.manager.current = "checkout"

@@ -99,6 +99,21 @@ class AddProductScreen(Screen):
             return "Price cannot be empty"
         if not self.stock_input.text.strip():
             return "Stock quantity cannot be empty"
+
+        try:
+            price = float(self.price_input.text)
+        except ValueError:
+            return "Price must be a valid number"
+        if price <= 0:
+            return "Price must be greater than 0"
+
+        try:
+            stock = int(self.stock_input.text)
+        except ValueError:
+            return "Stock quantity must be a valid number"
+        if stock < 0:
+            return "Stock quantity cannot be negative"
+
         return None
 
     def on_submit(self, instance):
@@ -126,7 +141,8 @@ class AddProductScreen(Screen):
 
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data.get("error", data))
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", data))
             return
 
         self.message_label.color = (0.2, 0.6, 0.3, 1)

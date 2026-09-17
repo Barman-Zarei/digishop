@@ -62,19 +62,27 @@ class CheckoutScreen(Screen):
 
     def load_summary(self):
         self.summary_layout.clear_widgets()
-        self.message_label.text = ""
 
         if not client.is_logged_in():
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = "Please login first"
             return
 
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Loading..."
         CartItem.get_cart(self.on_summary_loaded)
 
-    def on_summary_loaded(self, cart_items):
+    def on_summary_loaded(self, cart_items, error):
+        self.summary_layout.clear_widgets()
+
+        if error:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = error
+            self.cart_items = []
+            return
+
         self.message_label.text = ""
         self.cart_items = cart_items
-        self.summary_layout.clear_widgets()
 
         total = 0
         for item in cart_items:
@@ -104,7 +112,8 @@ class CheckoutScreen(Screen):
 
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data.get("error", "Error placing order"))
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", "Error placing order"))
             return
 
         order_ids = [order["id"] for order in data]

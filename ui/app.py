@@ -11,6 +11,7 @@ from ui.screens.become_seller_screen import BecomeSellerScreen
 from ui.screens.add_product_screen import AddProductScreen
 from ui.screens.seller_orders_screen import SellerOrdersScreen
 from ui.screens.my_products_screen import MyProductsScreen
+from ui.screens.my_orders_screen import MyOrdersScreen
 
 
 class DigiShopApp(App):
@@ -26,6 +27,7 @@ class DigiShopApp(App):
         sm.add_widget(AddProductScreen(name="add_product"))
         sm.add_widget(SellerOrdersScreen(name="seller_orders"))
         sm.add_widget(MyProductsScreen(name="my_products"))
+        sm.add_widget(MyOrdersScreen(name="my_orders"))
         return sm
 
 

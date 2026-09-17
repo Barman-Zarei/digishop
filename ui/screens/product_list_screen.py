@@ -32,18 +32,30 @@ class ProductCard(BoxLayout):
         image = AsyncImage(source=image_path, size_hint=(1, 0.5), allow_stretch=True)
 
         name_label = Label(text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.15), bold=True)
-        price_label = Label(text=f"${product['price']}", font_size="14sp", color=(0.3, 0.5, 0.9, 1), size_hint=(1, 0.12))
+
+        out_of_stock = product.get("stock_quantity", 0) <= 0
+        price_text = f"${product['price']}" + ("  (Out of stock)" if out_of_stock else "")
+        price_label = Label(
+            text=price_text, font_size="13sp",
+            color=(0.8, 0.2, 0.2, 1) if out_of_stock else (0.3, 0.5, 0.9, 1),
+            size_hint=(1, 0.12)
+        )
 
         buttons_row = BoxLayout(size_hint=(1, 0.23), spacing=dp(6))
 
         view_button = Button(text="View", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="13sp")
         view_button.bind(on_press=lambda instance: on_card_press(product))
 
-        add_button = Button(text="Add to Cart", background_color=(0.3, 0.7, 0.4, 1), background_normal="", color=(1, 1, 1, 1), font_size="13sp")
-        add_button.bind(on_press=lambda instance: on_add_press(product))
+        self.add_button = Button(
+            text="Out of stock" if out_of_stock else "Add to Cart",
+            background_color=(0.7, 0.7, 0.7, 1) if out_of_stock else (0.3, 0.7, 0.4, 1),
+            background_normal="", color=(1, 1, 1, 1), font_size="13sp",
+            disabled=out_of_stock
+        )
+        self.add_button.bind(on_press=lambda instance: on_add_press(product, self.add_button))
 
         buttons_row.add_widget(view_button)
-        buttons_row.add_widget(add_button)
+        buttons_row.add_widget(self.add_button)
 
         self.add_widget(image)
         self.add_widget(name_label)
@@ -58,6 +70,9 @@ class ProductCard(BoxLayout):
 class ProductListScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.current_search = None
+        self.current_min_price = None
+        self.current_max_price = None
 
         with self.canvas.before:
             Color(0.96, 0.97, 1, 1)
@@ -120,14 +135,26 @@ class ProductListScreen(Screen):
         self.bg_rect.pos = self.pos
 
     def on_pre_enter(self, *args):
-        self.load_products()
+        # Reloads with whatever search/filter is still active instead of
+        # silently discarding it (previously reset the search box to empty).
+        self.fetch_products()
 
-    def load_products(self):
-        self.search_input.text = ""
+    def fetch_products(self):
+        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Loading..."
-        Product.get_all(self.on_products_loaded)
+        Product.get_all(
+            self.on_products_loaded,
+            search=self.current_search,
+            min_price=self.current_min_price,
+            max_price=self.current_max_price
+        )
 
-    def on_products_loaded(self, products):
+    def on_products_loaded(self, products, error):
+        if error:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = error
+            self.render_products([])
+            return
         self.message_label.text = ""
         self.render_products(products)
 
@@ -138,35 +165,41 @@ class ProductListScreen(Screen):
             self.grid.add_widget(card)
 
     def on_search_submit(self, instance):
-        keyword = self.search_input.text.strip()
-        self.message_label.text = "Searching..."
-        Product.get_all(self.on_products_loaded, search=keyword or None)
+        self.current_search = self.search_input.text.strip() or None
+        self.fetch_products()
 
     def filter_by_price(self, min_price, max_price):
-        self.message_label.text = "Loading..."
-        Product.get_all(self.on_products_loaded, min_price=min_price, max_price=max_price)
+        self.current_min_price = min_price
+        self.current_max_price = max_price
+        self.fetch_products()
 
     def clear_filter(self, instance):
         self.search_input.text = ""
-        self.load_products()
+        self.current_search = None
+        self.current_min_price = None
+        self.current_max_price = None
+        self.fetch_products()
 
     def go_to_detail(self, product):
         detail_screen = self.manager.get_screen("product_detail")
         detail_screen.set_product(product)
         self.manager.current = "product_detail"
 
-    def add_to_cart(self, product):
+    def add_to_cart(self, product, button):
         if not client.is_logged_in():
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = "Please login first"
             return
 
-        CartItem.add(product["id"], 1, self.on_add_to_cart_result)
+        button.disabled = True
+        CartItem.add(product["id"], 1, lambda data, status_code: self.on_add_to_cart_result(data, status_code, button))
 
-    def on_add_to_cart_result(self, data, status_code):
+    def on_add_to_cart_result(self, data, status_code, button):
+        button.disabled = False
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data)
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", data))
             return
         self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Added to cart"
@@ -178,8 +211,7 @@ class ProductListScreen(Screen):
         if client.is_seller():
             self.manager.current = "seller_orders"
         else:
-            self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = "Only sellers can view orders here"
+            self.manager.current = "my_orders"
 
     def go_to_sell(self, instance):
         if client.is_seller():

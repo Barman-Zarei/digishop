@@ -5,10 +5,13 @@ class CartItem:
     @staticmethod
     def get_cart(callback):
         def on_response(response, error):
-            if error or response is None or response.status_code != 200:
-                callback([])
+            if error:
+                callback([], "Network error — check your connection")
                 return
-            callback(response.json())
+            if response is None or response.status_code != 200:
+                callback([], "Could not load your cart")
+                return
+            callback(response.json(), None)
 
         client.get_async("/cart/", on_response)
 
@@ -16,7 +19,7 @@ class CartItem:
     def add(product_id, quantity, callback):
         def on_response(response, error):
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 
@@ -28,7 +31,7 @@ class CartItem:
     def update_quantity(item_id, quantity, callback):
         def on_response(response, error):
             if error or response is None:
-                callback({"error": str(error)}, 0)
+                callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(response.json(), response.status_code)
 
