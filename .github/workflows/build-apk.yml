@@ -21,6 +21,8 @@ jobs:
         with:
           path: ~/.buildozer
           key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-global-
 
       - name: Cache Buildozer app build directory
         uses: actions/cache@v4
@@ -39,16 +41,23 @@ jobs:
             zlib1g-dev libncurses-dev \
             cmake libffi-dev libssl-dev \
             libsqlite3-dev libltdl-dev \
-            build-essential ccache
+            build-essential ccache patch
 
       - name: Install Buildozer and Cython
         run: |
-          pip install --upgrade pip
-          pip install buildozer==1.5.0 cython==0.29.36
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer==1.5.0 cython==0.29.36 virtualenv
 
-      - name: Build APK
+      - name: Show buildozer.spec for debugging
+        run: cat buildozer.spec
+
+      - name: Build APK (verbose)
         run: |
-          yes | buildozer -v android debug
+          set -x
+          yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
+        env:
+          # Forces buildozer to accept licenses non-interactively even if "yes |" isn't enough
+          ANDROID_SDK_LICENSE_ACCEPTED: "1"
 
       - name: Upload APK
         if: always()
@@ -56,10 +65,20 @@ jobs:
         with:
           name: digishop-apk
           path: bin/*.apk
+          if-no-files-found: warn
 
-      - name: Upload build logs on failure
+      - name: Upload full build log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-full-log
+          path: buildozer_full.log
+          if-no-files-found: ignore
+
+      - name: Upload deep buildozer logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: buildozer-logs
+          name: buildozer-deep-logs
           path: .buildozer/android/platform/build-*/build.log
+          if-no-files-found: ignore
