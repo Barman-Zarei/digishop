@@ -23,6 +23,7 @@ jobs:
           key: buildozer-global-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             buildozer-global-
+
       - name: Cache Buildozer app build directory
         uses: actions/cache@v4
         with:
@@ -30,6 +31,7 @@ jobs:
           key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             buildozer-app-${{ runner.os }}-
+
       - name: Install system dependencies
         run: |
           sudo apt update
@@ -40,16 +42,18 @@ jobs:
             cmake libffi-dev libssl-dev \
             libsqlite3-dev libltdl-dev \
             build-essential ccache patch
+
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip setuptools wheel
           pip install buildozer==1.5.0 cython==0.29.36 virtualenv
+
       - name: Show buildozer.spec for debugging
         run: cat buildozer.spec
 
       - name: Build APK (verbose)
         run: |
-          set -x
+          set -euo pipefail
           yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
         env:
           # Forces buildozer to accept licenses non-interactively even if "yes |" isn't enough
@@ -61,7 +65,7 @@ jobs:
         with:
           name: digishop-apk
           path: bin/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload full build log (always)
         if: always()
