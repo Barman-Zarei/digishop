@@ -16,21 +16,21 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: buildozer-global-${{ hashFiles('buildozer.spec', 'requirements.txt') }}
-          restore-keys: |
-            buildozer-global-
+- name: Cache Buildozer global directory
+  uses: actions/cache@v4
+  with:
+    path: ~/.buildozer
+    key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+    restore-keys: |
+      buildozer-global-
 
-      - name: Cache Buildozer app build directory
-        uses: actions/cache@v4
-        with:
-          path: .buildozer
-          key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'requirements.txt') }}
-          restore-keys: |
-            buildozer-app-${{ runner.os }}-
+- name: Cache Buildozer app build directory
+  uses: actions/cache@v4
+  with:
+    path: .buildozer
+    key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+    restore-keys: |
+      buildozer-app-${{ runner.os }}-
 
       - name: Install system dependencies
         run: |

@@ -51,38 +51,60 @@ jobs:
         run: |
           brew install pkg-config sdl2 sdl2_image sdl2_mixer sdl2_ttf
 
-      - name: Install common Python dependencies
+      - name: Install common Python dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install -r requirements.txt
           python -m pip install pyinstaller==6.10.0
 
-      - name: Install Windows Kivy dependencies
-        if: runner.os == 'Windows'
-        run: |
-          python -m pip install kivy_deps.sdl2 kivy_deps.glew
-
-      - name: Verify Kivy imports before building
+      - name: Verify Kivy imports before building (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
           python -c "import kivy; import requests; print('Kivy OK:', kivy.__version__)"
 
-      - name: Build executable
+      - name: Build executable (Linux/macOS)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           set -o pipefail
           pyinstaller --name digishop --onefile --windowed --clean --noconfirm \
             --add-data "assets${{ matrix.separator }}assets" main.py 2>&1 | tee pyinstaller_full.log
 
-      - name: Upload artifact
-        if: always()
+      - name: Install Python dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install Windows Kivy dependencies
+        if: runner.os == 'Windows'
+        run: |
+          pip install kivy_deps.sdl2 kivy_deps.glew
+
+      - name: Build executable (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --name digishop --onefile --windowed --add-data "assets${{ matrix.separator }}assets" main.py
+
+      - name: Upload artifact (Linux/macOS, strict)
+        if: always() && runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/*
           if-no-files-found: error
 
-      - name: Upload PyInstaller full log (always)
-        if: always()
+      - name: Upload artifact (Windows, lenient)
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*
+
+      - name: Upload PyInstaller full log (Linux/macOS only)
+        if: always() && runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: pyinstaller-log-${{ matrix.artifact_name }}
