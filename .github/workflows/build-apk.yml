@@ -20,7 +20,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-global-${{ hashFiles('buildozer.spec', 'requirements.txt') }}
           restore-keys: |
             buildozer-global-
 
@@ -28,7 +28,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .buildozer
-          key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec', 'requirements.txt') }}
           restore-keys: |
             buildozer-app-${{ runner.os }}-
 
@@ -48,16 +48,10 @@ jobs:
           pip install --upgrade pip setuptools wheel
           pip install buildozer==1.5.0 cython==0.29.36 virtualenv
 
-      - name: Show buildozer.spec for debugging
-        run: cat buildozer.spec
-
-      - name: Build APK (verbose)
+      - name: Build APK
         run: |
-          set -x
+          set -o pipefail
           yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
-        env:
-          # Forces buildozer to accept licenses non-interactively even if "yes |" isn't enough
-          ANDROID_SDK_LICENSE_ACCEPTED: "1"
 
       - name: Upload APK
         if: always()
@@ -65,7 +59,7 @@ jobs:
         with:
           name: digishop-apk
           path: bin/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Upload full build log (always)
         if: always()
@@ -73,12 +67,4 @@ jobs:
         with:
           name: buildozer-full-log
           path: buildozer_full.log
-          if-no-files-found: ignore
-
-      - name: Upload deep buildozer logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: buildozer-deep-logs
-          path: .buildozer/android/platform/build-*/build.log
           if-no-files-found: ignore
