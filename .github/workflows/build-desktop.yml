@@ -60,12 +60,16 @@ jobs:
 
       - name: Verify Kivy imports before building (Linux/macOS)
         if: runner.os != 'Windows'
+        env:
+          KIVY_GL_BACKEND: mock
         run: |
           python -c "import kivy; import requests; print('Kivy OK:', kivy.__version__)"
 
       - name: Build executable (Linux/macOS)
         if: runner.os != 'Windows'
         shell: bash
+        env:
+          KIVY_GL_BACKEND: mock
         run: |
           set -o pipefail
           pyinstaller --name digishop --onefile --windowed --clean --noconfirm \
@@ -85,6 +89,8 @@ jobs:
 
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
+        env:
+          KIVY_GL_BACKEND: mock
         run: |
           pyinstaller --name digishop --onefile --windowed --add-data "assets${{ matrix.separator }}assets" main.py
 

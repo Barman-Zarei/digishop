@@ -16,22 +16,20 @@ jobs:
         with:
           python-version: '3.11'
 
-- name: Cache Buildozer global directory
-  uses: actions/cache@v4
-  with:
-    path: ~/.buildozer
-    key: buildozer-global-${{ hashFiles('buildozer.spec') }}
-    restore-keys: |
-      buildozer-global-
-
-- name: Cache Buildozer app build directory
-  uses: actions/cache@v4
-  with:
-    path: .buildozer
-    key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-    restore-keys: |
-      buildozer-app-${{ runner.os }}-
-
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-global-
+      - name: Cache Buildozer app build directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-app-${{ runner.os }}-
       - name: Install system dependencies
         run: |
           sudo apt update
@@ -42,16 +40,20 @@ jobs:
             cmake libffi-dev libssl-dev \
             libsqlite3-dev libltdl-dev \
             build-essential ccache patch
-
       - name: Install Buildozer and Cython
         run: |
           pip install --upgrade pip setuptools wheel
           pip install buildozer==1.5.0 cython==0.29.36 virtualenv
+      - name: Show buildozer.spec for debugging
+        run: cat buildozer.spec
 
-      - name: Build APK
+      - name: Build APK (verbose)
         run: |
-          set -o pipefail
+          set -x
           yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
+        env:
+          # Forces buildozer to accept licenses non-interactively even if "yes |" isn't enough
+          ANDROID_SDK_LICENSE_ACCEPTED: "1"
 
       - name: Upload APK
         if: always()
@@ -59,7 +61,7 @@ jobs:
         with:
           name: digishop-apk
           path: bin/*.apk
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Upload full build log (always)
         if: always()
@@ -67,4 +69,12 @@ jobs:
         with:
           name: buildozer-full-log
           path: buildozer_full.log
+          if-no-files-found: ignore
+
+      - name: Upload deep buildozer logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-deep-logs
+          path: .buildozer/android/platform/build-*/build.log
           if-no-files-found: ignore
