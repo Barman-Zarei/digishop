@@ -5,8 +5,8 @@ package.domain = org.barmanzarei
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas
 source.exclude_dirs = backend,.github,.git,venv,bin,tests,__pycache__
-version = 5.7.49
-requirements = python3==3.11.9,kivy==2.3.1,requests
+version = 5.7.50
+requirements = python3==3.11.9,kivy==2.3.1
 orientation = portrait
 android.accept_sdk_license = True
 android.permissions = INTERNET
