@@ -3,63 +3,38 @@ name: Build APK
 on:
   push:
     branches: [ master ]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-
-    env:
-      PYTHONUNBUFFERED: "1"
-      PIP_DISABLE_PIP_VERSION_CHECK: "1"
-      PIP_NO_INPUT: "1"
-      VIRTUALENV_PIP: "23.3.2"
-      PIP_VERSION: "23.3.2"
-
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Show environment versions
-        run: |
-          python --version
-          python -m pip --version
-          java -version
-          uname -a
+          python-version: '3.11'
 
       - name: Cache Buildozer global directory
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-global-v3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-global-v3-${{ runner.os }}-
+            buildozer-global-
 
       - name: Cache Buildozer app build directory
         uses: actions/cache@v4
         with:
           path: .buildozer
-          key: buildozer-app-v3-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-app-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-app-v3-${{ runner.os }}-
-
-      - name: Remove incompatible Buildozer environments
-        run: |
-          set -euo pipefail
-
-          rm -rf .buildozer
-          rm -rf ~/.buildozer
-
-          mkdir -p bin
+            buildozer-app-${{ runner.os }}-
 
       - name: Install system dependencies
         run: |
+          set -euo pipefail
           sudo apt update
           sudo apt install -y \
             git zip unzip openjdk-17-jdk \
@@ -72,66 +47,51 @@ jobs:
       - name: Install Buildozer and Cython
         run: |
           set -euo pipefail
-
-          python -m pip install --upgrade \
-            "pip==23.3.2" \
-            "setuptools<70" \
-            wheel \
-            "virtualenv==20.25.1"
-
-          python -m pip install \
-            "buildozer==1.5.0" \
-            "cython==0.29.36"
-
-          python -m pip --version
-          buildozer --version
-          cython --version
-          virtualenv --version
+          pip install --upgrade pip setuptools wheel
+          pip install buildozer==1.5.0 cython==0.29.36 virtualenv
 
       - name: Show buildozer.spec for debugging
-        run: cat buildozer.spec
+        run: |
+          echo "----- buildozer.spec -----"
+          cat buildozer.spec
+          echo "---------------------------"
 
-      - name: Check required project files
+      - name: Pre-accept Android SDK licenses
         run: |
           set -euo pipefail
-
-          test -f buildozer.spec
-          test -f main.py
-
-          echo "Required project files exist."
+          yes | buildozer android update || true
+          ANDROID_SDK_ROOT="$HOME/.buildozer/android/platform/android-sdk"
+          if [ -d "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" ]; then
+            yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses --sdk_root="$ANDROID_SDK_ROOT" || true
+          fi
+        continue-on-error: true
 
       - name: Build APK
         run: |
-          set -Eeuo pipefail
-
-          buildozer -v android debug 2>&1 | tee buildozer_full.log
-
+          set -euo pipefail
+          yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
         env:
           ANDROID_SDK_LICENSE_ACCEPTED: "1"
 
-      - name: Verify APK output
-        if: success()
+      - name: Verify APK was actually produced
         run: |
           set -euo pipefail
-
-          if ! find bin -maxdepth 1 -type f -name "*.apk" | grep -q .; then
-            echo "::error::No APK file was generated."
+          if ! ls bin/*.apk 1> /dev/null 2>&1; then
+            echo "::error::No APK file found in bin/ — build did not actually succeed."
             exit 1
           fi
-
-          echo "Generated APK files:"
-          find bin -maxdepth 1 -type f -name "*.apk" -print
+          echo "APK found:"
+          ls -la bin/*.apk
 
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
-        continue-on-error: true
         with:
           name: digishop-apk
           path: bin/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
 
-      - name: Upload full build log
+      - name: Upload full build log (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -144,7 +104,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: buildozer-deep-logs
-          path: |
-            .buildozer/android/platform/build-*/build.log
-            .buildozer/android/platform/build-*/build/other_builds/*/build.log
+          path: .buildozer/android/platform/build-*/build.log
           if-no-files-found: ignore
