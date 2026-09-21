@@ -25,7 +25,7 @@ class CartRow(BoxLayout):
 
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
         info.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
-        info.add_widget(Label(text=f"${item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="12sp"))
+        info.add_widget(Label(text=f"Toman {item['price']} x {item['quantity']}", color=(0.4, 0.4, 0.4, 1), font_size="12sp"))
 
         at_max_stock = item["quantity"] >= item.get("stock_quantity", item["quantity"])
 
@@ -80,7 +80,7 @@ class CartScreen(Screen):
         scroll.add_widget(self.items_layout)
         outer.add_widget(scroll)
 
-        self.total_label = Label(text="Total: $0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
+        self.total_label = Label(text="Total: Toman 0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
         outer.add_widget(self.total_label)
 
         checkout_button = Button(
@@ -105,7 +105,7 @@ class CartScreen(Screen):
         if not client.is_logged_in():
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = "Please login first"
-            self.total_label.text = "Total: $0"
+            self.total_label.text = "Total: Toman 0"
             return
 
         self.message_label.color = (0.2, 0.6, 0.3, 1)
@@ -118,7 +118,7 @@ class CartScreen(Screen):
         if error:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = error
-            self.total_label.text = "Total: $0"
+            self.total_label.text = "Total: Toman 0"
             return
 
         self.message_label.text = ""
@@ -129,7 +129,7 @@ class CartScreen(Screen):
             self.items_layout.add_widget(row)
             total += float(item["price"]) * item["quantity"]
 
-        self.total_label.text = f"Total: ${total:.2f}"
+        self.total_label.text = f"Total: Toman {total:.2f}"
 
     def remove_item(self, item):
         CartItem.remove(item["id"], lambda success: self.load_cart())

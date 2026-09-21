@@ -1,11 +1,12 @@
 from collections import defaultdict
 
+from django.db import transaction
+from django.utils import timezone
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from django.db import transaction
 
 from cart.models import CartItem
 from products.models import Product
@@ -18,16 +19,22 @@ from .serializers import OrderSerializer, OrderStatusUpdateSerializer
 def order_list_view(request):
     customer = request.user.customer
     orders = Order.objects.filter(customer=customer).order_by("-order_date")
-    serializer = OrderSerializer(orders, many=True, context={"request": request})
-    return Response(serializer.data)
+    return Response(OrderSerializer(orders, many=True, context={"request": request}).data)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def order_create_view(request):
     customer = request.user.customer
-    cart_items = CartItem.objects.filter(customer=customer).select_related("product")
+    shipping_address = request.data.get("shipping_address", "").strip()
+    shipping_phone = request.data.get("shipping_phone", "").strip()
 
+    if len(shipping_address) < 5:
+        return Response({"error": "Please enter a valid shipping address"}, status=status.HTTP_400_BAD_REQUEST)
+    if len(shipping_phone) < 8:
+        return Response({"error": "Please enter a valid phone number"}, status=status.HTTP_400_BAD_REQUEST)
+
+    cart_items = CartItem.objects.filter(customer=customer).select_related("product")
     if not cart_items.exists():
         return Response({"error": "Your cart is empty"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -36,14 +43,9 @@ def order_create_view(request):
         items_by_seller[item.seller_id].append(item)
 
     created_orders = []
-
     with transaction.atomic():
-        # Lock every product row before checking stock, so two customers
-        # checking out at the same instant can't both pass the check.
         product_ids = [item.product_id for item in cart_items]
-        locked_products = {
-            p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)
-        }
+        locked_products = {p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)}
 
         for item in cart_items:
             product = locked_products[item.product_id]
@@ -55,31 +57,26 @@ def order_create_view(request):
 
         for seller_id, items in items_by_seller.items():
             total_amount = sum(item.product.price * item.quantity for item in items)
-
             order = Order.objects.create(
-                customer=customer,
-                seller_id=seller_id,
-                total_amount=total_amount,
-                status="pending"
+                customer=customer, seller_id=seller_id, total_amount=total_amount,
+                status="pending", shipping_address=shipping_address, shipping_phone=shipping_phone,
             )
-
             for item in items:
                 OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    quantity=item.quantity,
-                    unit_price=item.product.price
+                    order=order, product=item.product,
+                    quantity=item.quantity, unit_price=item.product.price
                 )
                 product = locked_products[item.product_id]
                 product.stock_quantity -= item.quantity
                 product.save()
-
             created_orders.append(order)
 
         cart_items.delete()
 
-    serializer = OrderSerializer(created_orders, many=True, context={"request": request})
-    return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(
+        OrderSerializer(created_orders, many=True, context={"request": request}).data,
+        status=status.HTTP_201_CREATED
+    )
 
 
 @api_view(["GET"])
@@ -87,11 +84,8 @@ def order_create_view(request):
 def seller_order_list_view(request):
     if not hasattr(request.user, "seller"):
         return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
-
-    seller = request.user.seller
-    orders = Order.objects.filter(seller=seller).order_by("-order_date")
-    serializer = OrderSerializer(orders, many=True, context={"request": request})
-    return Response(serializer.data)
+    orders = Order.objects.filter(seller=request.user.seller).order_by("-order_date")
+    return Response(OrderSerializer(orders, many=True, context={"request": request}).data)
 
 
 @api_view(["PATCH"])
@@ -99,7 +93,6 @@ def seller_order_list_view(request):
 def order_update_status_view(request, order_id):
     if not hasattr(request.user, "seller"):
         return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
-
     try:
         order = Order.objects.get(id=order_id, seller=request.user.seller)
     except Order.DoesNotExist:
@@ -107,9 +100,22 @@ def order_update_status_view(request, order_id):
 
     serializer = OrderStatusUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    order.status = serializer.validated_data["status"]
+    new_status = serializer.validated_data["status"]
+    order.status = new_status
+    if new_status == "delivered" and not order.delivered_at:
+        order.delivered_at = timezone.now()
     order.save()
+    return Response(OrderSerializer(order, context={"request": request}).data)
 
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def order_confirm_delivery_view(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id, customer=request.user.customer)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+    order.confirm_by_customer()
     return Response(OrderSerializer(order, context={"request": request}).data)
 
 
@@ -118,11 +124,9 @@ def order_update_status_view(request, order_id):
 def order_delete_view(request, order_id):
     if not hasattr(request.user, "seller"):
         return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
-
     try:
         order = Order.objects.get(id=order_id, seller=request.user.seller)
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
-
     order.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)

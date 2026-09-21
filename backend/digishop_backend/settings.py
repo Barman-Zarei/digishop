@@ -2,6 +2,11 @@ from datetime import timedelta
 from pathlib import Path
 import os
 
+ZARINPAL_MERCHANT_ID = os.environ.get("ZARINPAL_MERCHANT_ID", "")
+BACKEND_PUBLIC_URL = os.environ.get("BACKEND_PUBLIC_URL", "https://digishop-grwo.onrender.com")
+CURRENCY_IS_TOMAN = True  # prices in DB are Toman; Zarinpal needs Rials (x10)
+INTERNAL_CRON_SECRET = os.environ.get("INTERNAL_CRON_SECRET", "")
+
 try:
     from . import config
 except ImportError:

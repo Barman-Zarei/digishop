@@ -3,6 +3,7 @@ from kivy.metrics import dp
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
@@ -33,15 +34,35 @@ class CheckoutScreen(Screen):
         outer.add_widget(header)
 
         scroll = ScrollView(size_hint=(1, 1))
-        self.summary_layout = BoxLayout(orientation="vertical", spacing=dp(8), size_hint_y=None, padding=[0, dp(5), 0, dp(5)])
+        form = BoxLayout(orientation="vertical", spacing=dp(10), size_hint_y=None, padding=[0, dp(5), 0, dp(5)])
+        form.bind(minimum_height=form.setter("height"))
+
+        self.summary_layout = BoxLayout(orientation="vertical", spacing=dp(6), size_hint_y=None)
         self.summary_layout.bind(minimum_height=self.summary_layout.setter("height"))
-        scroll.add_widget(self.summary_layout)
+        form.add_widget(self.summary_layout)
+
+        form.add_widget(Label(text="Shipping Address", size_hint=(1, None), height=dp(24), color=(0.2, 0.2, 0.2, 1), font_size="13sp"))
+        self.address_input = TextInput(
+            hint_text="Full address (street, city, postal code)...",
+            multiline=True, size_hint=(1, None), height=dp(90),
+            padding=[dp(12), dp(12)], font_size="14sp"
+        )
+        form.add_widget(self.address_input)
+
+        form.add_widget(Label(text="Phone Number", size_hint=(1, None), height=dp(24), color=(0.2, 0.2, 0.2, 1), font_size="13sp"))
+        self.phone_input = TextInput(
+            hint_text="09xxxxxxxxx", multiline=False, size_hint=(1, None),
+            height=dp(50), padding=[dp(15)] * 4, font_size="14sp", input_filter="int"
+        )
+        form.add_widget(self.phone_input)
+
+        scroll.add_widget(form)
         outer.add_widget(scroll)
 
         self.total_label = Label(text="Total: $0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
         outer.add_widget(self.total_label)
 
-        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
+        self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(40), font_size="13sp")
         outer.add_widget(self.message_label)
 
         self.place_order_button = Button(
@@ -62,74 +83,96 @@ class CheckoutScreen(Screen):
 
     def load_summary(self):
         self.summary_layout.clear_widgets()
-
         if not client.is_logged_in():
-            self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = "Please login first"
             return
-
-        self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Loading..."
         CartItem.get_cart(self.on_summary_loaded)
 
     def on_summary_loaded(self, cart_items, error):
         self.summary_layout.clear_widgets()
-
         if error:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = error
             self.cart_items = []
             return
-
         self.message_label.text = ""
         self.cart_items = cart_items
-
         total = 0
         for item in cart_items:
             row_text = f"{item['name']}  x{item['quantity']}  -  ${float(item['price']) * item['quantity']:.2f}"
-            self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(30), font_size="13sp"))
+            self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(28), font_size="13sp"))
             total += float(item["price"]) * item["quantity"]
-
         self.total_label.text = f"Total: ${total:.2f}"
 
     def place_order(self, instance):
         if not client.is_logged_in():
             self.message_label.text = "Please login first"
             return
-
         if not self.cart_items:
             self.message_label.text = "Your cart is empty"
+            return
+
+        address = self.address_input.text.strip()
+        phone = self.phone_input.text.strip()
+        if len(address) < 5:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = "Please enter your full address"
+            return
+        if len(phone) < 8:
+            self.message_label.color = (0.8, 0.2, 0.2, 1)
+            self.message_label.text = "Please enter a valid phone number"
             return
 
         self.place_order_button.disabled = True
         self.message_label.color = (0.3, 0.3, 0.3, 1)
         self.message_label.text = "Placing order..."
 
-        Order.create(self.on_order_placed)
+        Order.create(address, phone, self.on_order_placed)
 
     def on_order_placed(self, data, status_code):
         self.place_order_button.disabled = False
-
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             error_data = data if isinstance(data, dict) else {}
             self.message_label.text = str(error_data.get("error", "Error placing order"))
             return
+        self.show_payment_info_popup(data)
 
-        order_ids = [order["id"] for order in data]
-        self.show_confirmation_popup(order_ids)
-
-    def show_confirmation_popup(self, order_ids):
+    def show_payment_info_popup(self, orders):
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
-        content.add_widget(Label(
-            text=f"Order placed successfully!\nOrder ID(s): {', '.join(str(i) for i in order_ids)}",
-            color=(0.1, 0.1, 0.1, 1)
-        ))
+        scroll = ScrollView(size_hint=(1, 0.8))
+        info_box = BoxLayout(orientation="vertical", spacing=dp(12), size_hint_y=None)
+        info_box.bind(minimum_height=info_box.setter("height"))
 
-        close_button = Button(text="OK", size_hint=(1, 0.4), background_color=(0.3, 0.5, 0.9, 1), background_normal="", color=(1, 1, 1, 1))
+        for order in orders:
+            block = BoxLayout(orientation="vertical", spacing=dp(4), size_hint_y=None, height=dp(110))
+            block.add_widget(Label(
+                text=f"Order #{order['id']} - {order['store_name']}",
+                bold=True, color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(24)
+            ))
+            block.add_widget(Label(
+                text=f"Amount: ${order['total_amount']}", color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(22)
+            ))
+            block.add_widget(Label(
+                text=f"Seller contact: {order['seller_phone']}", color=(0.2, 0.4, 0.7, 1), size_hint_y=None, height=dp(22)
+            ))
+            block.add_widget(Label(
+                text=f"Bank account: {order['seller_bank_account']}", color=(0.2, 0.4, 0.7, 1), size_hint_y=None, height=dp(22)
+            ))
+            info_box.add_widget(block)
+
+        scroll.add_widget(info_box)
+        content.add_widget(Label(
+            text="Your order has been placed.\nPlease contact the seller directly and transfer the payment.",
+            size_hint=(1, 0.2), color=(0.1, 0.1, 0.1, 1)
+        ))
+        content.add_widget(scroll)
+
+        close_button = Button(text="OK", size_hint=(1, None), height=dp(44), background_color=(0.3, 0.5, 0.9, 1), background_normal="", color=(1, 1, 1, 1))
         content.add_widget(close_button)
 
-        popup = Popup(title="Success", content=content, size_hint=(0.8, 0.4), auto_dismiss=False)
+        popup = Popup(title="Payment Information", content=content, size_hint=(0.9, 0.8), auto_dismiss=False)
         close_button.bind(on_press=lambda instance: self.on_popup_close(popup))
         popup.open()
 

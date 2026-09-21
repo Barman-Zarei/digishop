@@ -27,7 +27,7 @@ class MyProductRow(BoxLayout):
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
         info.add_widget(Label(text=product["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
         info.add_widget(Label(
-            text=f"${product['price']} - Stock: {product['stock_quantity']}",
+            text=f"Toman {product['price']} - Stock: {product['stock_quantity']}",
             color=(0.4, 0.4, 0.4, 1), font_size="12sp"
         ))
 

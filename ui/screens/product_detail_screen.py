@@ -78,7 +78,7 @@ class ProductDetailScreen(Screen):
 
         self.image.source = product.get("image_path") or "assets/no_image.png"
         self.name_label.text = product["name"]
-        self.price_label.text = f"${product['price']}"
+        self.price_label.text = f"Toman {product['price']}"
         self.description_label.text = product.get("description") or "No description available"
 
         in_stock = product["stock_quantity"] > 0

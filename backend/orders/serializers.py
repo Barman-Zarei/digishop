@@ -1,34 +1,44 @@
 from rest_framework import serializers
-
 from .models import Order, OrderItem
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(source="product.id", read_only=True)
     name = serializers.CharField(source="product.name", read_only=True)
-    image_path = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product_id", "name", "image_path", "quantity", "unit_price"]
-
-    def get_image_path(self, obj):
-        if not obj.product.image:
-            return None
-        request = self.context.get("request")
-        if request:
-            return request.build_absolute_uri(obj.product.image.url)
-        return obj.product.image.url
+        fields = ["id", "name", "quantity", "unit_price"]
 
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    customer_name = serializers.CharField(source="customer.user.username", read_only=True)
     store_name = serializers.CharField(source="seller.store_name", read_only=True)
-    customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    seller_phone = serializers.CharField(source="seller.phone", read_only=True)
+    seller_bank_account = serializers.CharField(source="seller.bank_account_number", read_only=True)
+    can_confirm_delivery = serializers.SerializerMethodField()
+    fraud_report_available = serializers.BooleanField(read_only=True)
+    seller_national_id = serializers.SerializerMethodField()
+    seller_legal_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ["id", "store_name", "customer_name", "order_date", "total_amount", "status", "items"]
+        fields = [
+            "id", "customer_name", "store_name", "seller_phone", "seller_bank_account",
+            "total_amount", "status", "shipping_address", "shipping_phone",
+            "delivered_at", "customer_confirmed_at", "order_date", "items",
+            "can_confirm_delivery", "fraud_report_available",
+            "seller_national_id", "seller_legal_name",
+        ]
+
+    def get_can_confirm_delivery(self, obj):
+        return obj.customer_confirmed_at is None
+
+    def get_seller_national_id(self, obj):
+        return obj.seller.national_id if obj.fraud_report_available else None
+
+    def get_seller_legal_name(self, obj):
+        return obj.seller.legal_full_name if obj.fraud_report_available else None
 
 
 class OrderStatusUpdateSerializer(serializers.Serializer):

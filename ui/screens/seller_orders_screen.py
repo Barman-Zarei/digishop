@@ -29,7 +29,7 @@ class SellerOrderRow(BoxLayout):
             text=f"Order #{order['id']} - {order['customer_name']}",
             color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True
         ))
-        top_row.add_widget(Label(text=f"${order['total_amount']}", color=(0.3, 0.5, 0.9, 1), font_size="14sp"))
+        top_row.add_widget(Label(text=f"Toman {order['total_amount']}", color=(0.3, 0.5, 0.9, 1), font_size="14sp"))
         self.add_widget(top_row)
 
         items_text = ", ".join(f"{item['name']} x{item['quantity']}" for item in order["items"])

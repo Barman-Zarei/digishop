@@ -34,7 +34,7 @@ class ProductCard(BoxLayout):
         name_label = Label(text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.15), bold=True)
 
         out_of_stock = product.get("stock_quantity", 0) <= 0
-        price_text = f"${product['price']}" + ("  (Out of stock)" if out_of_stock else "")
+        price_text = f"Toman {product['price']}" + ("  (Out of stock)" if out_of_stock else "")
         price_label = Label(
             text=price_text, font_size="13sp",
             color=(0.8, 0.2, 0.2, 1) if out_of_stock else (0.3, 0.5, 0.9, 1),
@@ -107,11 +107,11 @@ class ProductListScreen(Screen):
         filter_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(6))
         all_button = Button(text="All", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         all_button.bind(on_press=self.clear_filter)
-        low_price_button = Button(text="Under $50", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
+        low_price_button = Button(text="Under Toman 5,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         low_price_button.bind(on_press=lambda instance: self.filter_by_price(0, 50))
-        mid_price_button = Button(text="$50-$200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
+        mid_price_button = Button(text="Toman 5,000,000-Toman 200,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         mid_price_button.bind(on_press=lambda instance: self.filter_by_price(50, 200))
-        high_price_button = Button(text="Over $200", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
+        high_price_button = Button(text="Over Toman 200,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
         high_price_button.bind(on_press=lambda instance: self.filter_by_price(200, None))
         filter_row.add_widget(all_button)
         filter_row.add_widget(low_price_button)
