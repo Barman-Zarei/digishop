@@ -59,7 +59,7 @@ class CheckoutScreen(Screen):
         scroll.add_widget(form)
         outer.add_widget(scroll)
 
-        self.total_label = Label(text="Total: $0", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
+        self.total_label = Label(text="Total: 0 Toman", font_size="17sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(34))
         outer.add_widget(self.total_label)
 
         self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(40), font_size="13sp")
@@ -100,10 +100,10 @@ class CheckoutScreen(Screen):
         self.cart_items = cart_items
         total = 0
         for item in cart_items:
-            row_text = f"{item['name']}  x{item['quantity']}  -  ${float(item['price']) * item['quantity']:.2f}"
+            row_text = f"{item['name']}  x{item['quantity']}  -  {float(item['price']) * item['quantity']:.2f} Toman"
             self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(28), font_size="13sp"))
             total += float(item["price"]) * item["quantity"]
-        self.total_label.text = f"Total: ${total:.2f}"
+        self.total_label.text = f"Total: {total:.2f} Toman"
 
     def place_order(self, instance):
         if not client.is_logged_in():
@@ -152,7 +152,7 @@ class CheckoutScreen(Screen):
                 bold=True, color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(24)
             ))
             block.add_widget(Label(
-                text=f"Amount: ${order['total_amount']}", color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(22)
+                text=f"Amount: {order['total_amount']} Toman", color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(22)
             ))
             block.add_widget(Label(
                 text=f"Seller contact: {order['seller_phone']}", color=(0.2, 0.4, 0.7, 1), size_hint_y=None, height=dp(22)

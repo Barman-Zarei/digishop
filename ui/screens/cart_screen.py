@@ -135,10 +135,40 @@ class CartScreen(Screen):
         CartItem.remove(item["id"], lambda success: self.load_cart())
 
     def change_quantity(self, item, delta):
+        global new_quantity
         new_quantity = item["quantity"] + delta
         if new_quantity < 1:
             self.remove_item(item)
             return
+
+        for row in self.items_layout.children:
+            row.disabled = True
+
+        def on_result(data, status_code):
+            for row in self.items_layout.children:
+                row.disabled = False
+            if status_code != 200:
+                self.message_label.color = (0.8, 0.2, 0.2, 1)
+                error_data = data if isinstance(data, dict) else {}
+                self.message_label.text = str(error_data.get("error", "Could not update quantity"))
+            self.load_cart()
+
+        CartItem.update_quantity(item["id"], new_quantity, on_result)
+
+    def remove_item(self, item):
+        for row in self.items_layout.children:
+            row.disabled = True
+
+        def on_result(success):
+            if not success:
+                self.message_label.color = (0.8, 0.2, 0.2, 1)
+                self.message_label.text = "Error removing item"
+                for row in self.items_layout.children:
+                    row.disabled = False
+                return
+            self.load_cart()
+
+        CartItem.remove(item["id"], on_result)
 
         def on_result(data, status_code):
             if status_code != 200:

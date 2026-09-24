@@ -34,6 +34,8 @@ class LoginScreen(Screen):
             hint_text="Password", multiline=False, password=True, size_hint=(1, None),
             height=dp(56), padding=[dp(15)] * 4, font_size="16sp"
         )
+        self.password_input.bind(on_text_validate=self.on_login)
+        
 
         self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1), font_size="14sp")
 

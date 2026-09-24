@@ -6,3 +6,10 @@ venv/
 .vscode/
 *.db
 config.py
+backend/media/
+.buildozer/
+bin/
+dist/
+*.pyc
+__pycache__/
+.env

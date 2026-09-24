@@ -3,7 +3,7 @@ from .models import Order, OrderItem
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="product.name", read_only=True)
+    name = serializers.CharField(source="product_name", read_only=True)
 
     class Meta:
         model = OrderItem
@@ -32,7 +32,7 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
 
     def get_can_confirm_delivery(self, obj):
-        return obj.customer_confirmed_at is None
+        return obj.status == "delivered" and obj.customer_confirmed_at is None
 
     def get_seller_national_id(self, obj):
         return obj.seller.national_id if obj.fraud_report_available else None

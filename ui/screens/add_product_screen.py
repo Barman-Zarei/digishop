@@ -69,7 +69,10 @@ class AddProductScreen(Screen):
 
     def open_file_chooser(self, instance):
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(10))
-        chooser = FileChooserListView(filters=["*.png", "*.jpg", "*.jpeg"])
+        chooser = FileChooserListView(
+            filters=[lambda folder, filename: filename.lower().endswith((".png", ".jpg", ".jpeg"))],
+            path="/storage/emulated/0/" if hasattr(__import__("sys"), "getandroidapilevel") else "/"
+        )
         content.add_widget(chooser)
 
         buttons_row = BoxLayout(size_hint=(1, 0.15), spacing=dp(10))

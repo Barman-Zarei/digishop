@@ -5,3 +5,5 @@ psycopg2-binary==2.9.9
 django-cors-headers
 hypercorn
 Pillow
+django-cloudinary-storage==0.3.0
+cloudinary==1.40.0

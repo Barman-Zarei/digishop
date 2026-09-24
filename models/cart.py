@@ -5,14 +5,13 @@ class CartItem:
     @staticmethod
     def get_cart(callback):
         def on_response(response, error):
-            if error:
+            if error or response is None:
                 callback([], "Network error — check your connection")
                 return
-            if response is None or response.status_code != 200:
+            if response.status_code != 200:
                 callback([], "Could not load your cart")
                 return
-            callback(response.json(), None)
-
+            callback(client.safe_json(response), None)
         client.get_async("/cart/", on_response)
 
     @staticmethod
@@ -21,11 +20,8 @@ class CartItem:
             if error or response is None:
                 callback({"error": str(error) if error else "No response from server"}, 0)
                 return
-            callback(response.json(), response.status_code)
-
-        client.post_async("/cart/add/", on_response, data={
-            "product_id": product_id, "quantity": quantity
-        })
+            callback(client.safe_json(response), response.status_code)
+        client.post_async("/cart/add/", on_response, data={"product_id": product_id, "quantity": quantity})
 
     @staticmethod
     def update_quantity(item_id, quantity, callback):
@@ -33,13 +29,11 @@ class CartItem:
             if error or response is None:
                 callback({"error": str(error) if error else "No response from server"}, 0)
                 return
-            callback(response.json(), response.status_code)
-
+            callback(client.safe_json(response), response.status_code)
         client.patch_async(f"/cart/{item_id}/", on_response, data={"quantity": quantity})
 
     @staticmethod
     def remove(item_id, callback):
         def on_response(response, error):
             callback(response is not None and response.status_code == 204)
-
         client.delete_async(f"/cart/{item_id}/remove/", on_response)

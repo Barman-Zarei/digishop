@@ -29,10 +29,12 @@ class ProductCard(BoxLayout):
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         image_path = product.get("image_path") or "assets/no_image.png"
-        image = AsyncImage(source=image_path, size_hint=(1, 0.5), allow_stretch=True)
+        image = AsyncImage(source=image_path, size_hint=(1, 0.5), fit_mode="contain")
 
-        name_label = Label(text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1), size_hint=(1, 0.15), bold=True)
-
+        name_label = Label(
+            text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1),
+            size_hint=(1, 0.15), bold=True, text_size=(None, None), shorten=True, shorten_from="right"
+        )
         out_of_stock = product.get("stock_quantity", 0) <= 0
         price_text = f"Toman {product['price']}" + ("  (Out of stock)" if out_of_stock else "")
         price_label = Label(
@@ -73,6 +75,8 @@ class ProductListScreen(Screen):
         self.current_search = None
         self.current_min_price = None
         self.current_max_price = None
+        self._request_token = 0
+
 
         with self.canvas.before:
             Color(0.96, 0.97, 1, 1)
@@ -82,6 +86,9 @@ class ProductListScreen(Screen):
         outer = BoxLayout(orientation="vertical", padding=dp(15), spacing=dp(10))
 
         header = BoxLayout(size_hint=(1, None), height=dp(44), spacing=dp(6))
+        my_orders_button = Button(text="My Buys", size_hint=(0.18, 1), background_color=(0.5, 0.6, 0.9, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
+        my_orders_button.bind(on_press=lambda instance: setattr(self.manager, "current", "my_orders"))
+        header.add_widget(my_orders_button)
         title = Label(text="DigiShop", font_size="18sp", color=(0.2, 0.3, 0.6, 1), bold=True)
         sell_button = Button(text="Sell", size_hint=(0.18, 1), background_color=(0.6, 0.4, 0.8, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         sell_button.bind(on_press=self.go_to_sell)
@@ -107,16 +114,25 @@ class ProductListScreen(Screen):
         filter_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(6))
         all_button = Button(text="All", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
         all_button.bind(on_press=self.clear_filter)
-        low_price_button = Button(text="Under Toman 5,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
-        low_price_button.bind(on_press=lambda instance: self.filter_by_price(0, 50))
-        mid_price_button = Button(text="Toman 5,000,000-Toman 200,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
-        mid_price_button.bind(on_press=lambda instance: self.filter_by_price(50, 200))
-        high_price_button = Button(text="Over Toman 200,000,000", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="11sp")
-        high_price_button.bind(on_press=lambda instance: self.filter_by_price(200, None))
+        low_price_button = Button(text="Under 5M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        low_price_button.bind(on_press=lambda instance: self.filter_by_price(0, 5000000))
+        mid_price_button = Button(text="5M-20M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        mid_price_button.bind(on_press=lambda instance: self.filter_by_price(5000000, 20000000))
+        high_price_button = Button(text="20M-50M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        high_price_button.bind(on_press=lambda instance: self.filter_by_price(20000000, 50000000))
+        very_high_price_button = Button(text="50M-100M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(50000000, 100000000))
+        very_very_high_price_button = Button(text="100M-250M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        very_very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(100000000, 250000000))
+        very_very_very_high_price_button = Button(text="Over 250M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
+        very_very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(250000000, None))
         filter_row.add_widget(all_button)
         filter_row.add_widget(low_price_button)
         filter_row.add_widget(mid_price_button)
         filter_row.add_widget(high_price_button)
+        filter_row.add_widget(very_high_price_button)
+        filter_row.add_widget(very_very_high_price_button)
+        filter_row.add_widget(very_very_very_high_price_button)
         outer.add_widget(filter_row)
 
         self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")
@@ -140,16 +156,17 @@ class ProductListScreen(Screen):
         self.fetch_products()
 
     def fetch_products(self):
-        self.message_label.color = (0.2, 0.6, 0.3, 1)
+        self._request_token += 1
+        current_token = self._request_token
         self.message_label.text = "Loading..."
         Product.get_all(
-            self.on_products_loaded,
-            search=self.current_search,
-            min_price=self.current_min_price,
-            max_price=self.current_max_price
+            lambda products, error, token=current_token: self.on_products_loaded(products, error, token),
+            search=self.current_search, min_price=self.current_min_price, max_price=self.current_max_price
         )
 
-    def on_products_loaded(self, products, error):
+    def on_products_loaded(self, products, error, token):
+        if token != self._request_token:
+            return  # a newer request has already superseded this one
         if error:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
             self.message_label.text = error

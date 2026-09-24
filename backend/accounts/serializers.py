@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from .models import User, Customer, Seller
@@ -12,25 +14,28 @@ class RegisterSerializer(serializers.Serializer):
     address = serializers.CharField(required=False, allow_blank=True)
 
     def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
+        if User.objects.filter(username__iexact=value).exists():
             raise serializers.ValidationError("Username already taken")
         return value
 
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
     def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data["username"],
-            password=validated_data["password"],
-            email=validated_data.get("email", ""),
-            phone=validated_data.get("phone", "")
-        )
-
-        customer = Customer.objects.create(
-            user=user,
-            full_name=validated_data["full_name"],
-            address=validated_data.get("address", ""),
-            phone=validated_data.get("phone", "")
-        )
-
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=validated_data["username"],
+                password=validated_data["password"],
+                email=validated_data.get("email", ""),
+                phone=validated_data.get("phone", "")
+            )
+            customer = Customer.objects.create(
+                user=user,
+                full_name=validated_data["full_name"],
+                address=validated_data.get("address", ""),
+                phone=validated_data.get("phone", "")
+            )
         return customer
 
 
@@ -65,16 +70,9 @@ class BecomeSellerSerializer(serializers.Serializer):
     def validate(self, attrs):
         request = self.context["request"]
         if Seller.objects.filter(user=request.user).exists():
-            raise serializers.ValidationError("شما قبلاً فروشنده شده‌اید")
+            raise serializers.ValidationError("You are already a seller")
         return attrs
 
     def create(self, validated_data):
         request = self.context["request"]
-        return Seller.objects.create(
-            user=request.user,
-            store_name=validated_data["store_name"],
-            phone=validated_data["phone"],
-            national_id=validated_data["national_id"],
-            legal_full_name=validated_data["legal_full_name"],
-            bank_account_number=validated_data["bank_account_number"],
-        )
+        return Seller.objects.create(user=request.user, **validated_data)

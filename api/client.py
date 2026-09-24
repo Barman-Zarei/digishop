@@ -3,7 +3,7 @@ import threading
 import requests
 from kivy.clock import Clock
 
-API_BASE_URL = "https://digishop-grwo.onrender.com"
+API_BASE_URL = "https://digishop-grwo.onrender.com/api"
 
 _access_token = None
 _refresh_token = None
@@ -49,6 +49,16 @@ def get_current_seller():
     return _current_seller
 
 
+def safe_json(response):
+    """Never raises. Returns dict with a readable 'error' key on any parse failure."""
+    if response is None:
+        return {"error": "No response from server"}
+    try:
+        return response.json()
+    except ValueError:
+        return {"error": f"Unexpected server response (status {response.status_code})"}
+
+
 def _headers(multipart=False):
     headers = {}
     if not multipart:
@@ -59,10 +69,7 @@ def _headers(multipart=False):
 
 
 def _try_refresh_token():
-    """Exchanges the stored refresh token for a new access token.
-    Runs on a background thread; blocking calls here are fine."""
     global _access_token
-
     if not _refresh_token:
         return False
 
@@ -71,16 +78,21 @@ def _try_refresh_token():
             response = requests.post(
                 f"{API_BASE_URL}/accounts/token/refresh/",
                 json={"refresh": _refresh_token},
-                timeout=15
+                timeout=30
             )
         except requests.RequestException:
             return False
 
-        if response.status_code != 200:
+        if response.status_code == 401:
+            # Only a definitive "refresh token invalid/expired" should log the user out.
             clear_session()
             return False
+        if response.status_code != 200:
+            # Transient error (502, timeout, cold start) — keep the session, just fail this attempt.
+            return False
 
-        _access_token = response.json().get("access")
+        data = safe_json(response)
+        _access_token = data.get("access")
         return _access_token is not None
 
 
@@ -88,11 +100,9 @@ def _run_async(request_func, callback, retry_on_401=True):
     def worker():
         try:
             response = request_func()
-
             if retry_on_401 and response is not None and response.status_code == 401 and _refresh_token:
                 if _try_refresh_token():
                     response = request_func()
-
             error = None
         except Exception as e:
             response = None
@@ -106,32 +116,25 @@ def _run_async(request_func, callback, retry_on_401=True):
 
 def get_async(path, callback, params=None):
     def do_request():
-        return requests.get(f"{API_BASE_URL}{path}", headers=_headers(), params=params, timeout=15)
+        return requests.get(f"{API_BASE_URL}{path}", headers=_headers(), params=params, timeout=30)
     _run_async(do_request, callback)
 
 
 def post_async(path, callback, data=None, files=None):
     def do_request():
         if files:
-            return requests.post(
-                f"{API_BASE_URL}{path}",
-                headers=_headers(multipart=True),
-                data=data,
-                files=files,
-                timeout=30
-            )
-        return requests.post(f"{API_BASE_URL}{path}", headers=_headers(), json=data, timeout=15)
-    # A consumed file handle can't be safely resent, so skip the retry for uploads.
+            return requests.post(f"{API_BASE_URL}{path}", headers=_headers(multipart=True), data=data, files=files, timeout=45)
+        return requests.post(f"{API_BASE_URL}{path}", headers=_headers(), json=data, timeout=30)
     _run_async(do_request, callback, retry_on_401=(files is None))
 
 
 def patch_async(path, callback, data=None):
     def do_request():
-        return requests.patch(f"{API_BASE_URL}{path}", headers=_headers(), json=data, timeout=15)
+        return requests.patch(f"{API_BASE_URL}{path}", headers=_headers(), json=data, timeout=30)
     _run_async(do_request, callback)
 
 
 def delete_async(path, callback):
     def do_request():
-        return requests.delete(f"{API_BASE_URL}{path}", headers=_headers(), timeout=15)
+        return requests.delete(f"{API_BASE_URL}{path}", headers=_headers(), timeout=30)
     _run_async(do_request, callback)

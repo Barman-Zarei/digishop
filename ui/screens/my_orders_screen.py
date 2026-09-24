@@ -15,11 +15,13 @@ class MyOrderRow(BoxLayout):
         super().__init__(orientation="vertical", padding=dp(10), spacing=dp(6), **kwargs)
         self.order = order
 
-        extra_height = 0
+        extra_height = dp(20)  # padding buffer
         if order.get("fraud_report_available"):
-            extra_height = dp(90)
-        elif order.get("can_confirm_delivery") and order.get("status") == "delivered":
-            extra_height = dp(46)
+            extra_height += dp(90)
+        if order.get("customer_confirmed_at"):
+            extra_height += dp(22)
+        elif order.get("status") == "delivered":
+            extra_height += dp(46)
 
         self.size_hint_y = None
         self.height = dp(140) + extra_height
@@ -34,7 +36,7 @@ class MyOrderRow(BoxLayout):
             text=f"Order #{order['id']} - {order['store_name']}",
             color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True
         ))
-        top_row.add_widget(Label(text=f"${order['total_amount']}", color=(0.3, 0.5, 0.9, 1), font_size="14sp"))
+        top_row.add_widget(Label(text=f"{order['total_amount']} Toman", color=(0.3, 0.5, 0.9, 1), font_size="14sp"))
         self.add_widget(top_row)
 
         items_text = ", ".join(f"{item['name']} x{item['quantity']}" for item in order["items"])

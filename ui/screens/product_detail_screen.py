@@ -28,7 +28,7 @@ class ProductDetailScreen(Screen):
         back_button.bind(on_press=self.go_back)
         outer.add_widget(back_button)
 
-        self.image = AsyncImage(size_hint=(1, 0.4), allow_stretch=True)
+        self.image = AsyncImage(size_hint=(1, 0.4), fit_mode="contain")
         outer.add_widget(self.image)
 
         self.name_label = Label(text="", font_size="20sp", bold=True, color=(0.1, 0.1, 0.1, 1), size_hint=(1, None), height=dp(36))

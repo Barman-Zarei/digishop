@@ -14,9 +14,8 @@ from .serializers import CartItemSerializer, CartItemCreateSerializer, CartItemU
 @permission_classes([IsAuthenticated])
 def cart_list_view(request):
     customer = request.user.customer
-    items = CartItem.objects.filter(customer=customer).select_related("product", "seller")
-    serializer = CartItemSerializer(items, many=True, context={"request": request})
-    return Response(serializer.data)
+    items = CartItem.objects.filter(customer=customer, product__is_active=True).select_related("product")
+    return Response(CartItemSerializer(items, many=True, context={"request": request}).data)
 
 
 @api_view(["POST"])
@@ -36,6 +35,9 @@ def cart_add_view(request):
         except Product.DoesNotExist:
             return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        if hasattr(request.user, "seller") and product.seller_id == request.user.seller.id:
+            return Response({"error": "You cannot add your own product to the cart"}, status=status.HTTP_400_BAD_REQUEST)
+
         existing_item = CartItem.objects.filter(customer=customer, product=product).first()
         already_in_cart = existing_item.quantity if existing_item else 0
         total_requested = already_in_cart + requested_quantity
@@ -52,10 +54,7 @@ def cart_add_view(request):
             cart_item = existing_item
         else:
             cart_item = CartItem.objects.create(
-                customer=customer,
-                product=product,
-                seller=product.seller,
-                quantity=requested_quantity
+                customer=customer, product=product, seller=product.seller, quantity=requested_quantity
             )
 
     return Response(CartItemSerializer(cart_item, context={"request": request}).data, status=status.HTTP_201_CREATED)
@@ -73,16 +72,13 @@ def cart_update_view(request, item_id):
     with transaction.atomic():
         try:
             cart_item = CartItem.objects.select_related("product").select_for_update().get(
-                id=item_id, customer=customer
+                id=item_id, customer=customer, product__is_active=True
             )
         except CartItem.DoesNotExist:
             return Response({"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
 
         if new_quantity > cart_item.product.stock_quantity:
-            return Response(
-                {"error": f"Only {cart_item.product.stock_quantity} in stock"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": f"Only {cart_item.product.stock_quantity} in stock"}, status=status.HTTP_400_BAD_REQUEST)
 
         cart_item.quantity = new_quantity
         cart_item.save()
@@ -94,11 +90,9 @@ def cart_update_view(request, item_id):
 @permission_classes([IsAuthenticated])
 def cart_remove_view(request, item_id):
     customer = request.user.customer
-
     try:
         cart_item = CartItem.objects.get(id=item_id, customer=customer)
     except CartItem.DoesNotExist:
         return Response({"error": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
-
     cart_item.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
