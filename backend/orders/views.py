@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from cart.models import CartItem
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -8,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from cart.models import CartItem
+from accounts.utils import get_customer_or_error, get_seller_or_error
 from products.models import Product
 from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderStatusUpdateSerializer
@@ -17,7 +19,9 @@ from .serializers import OrderSerializer, OrderStatusUpdateSerializer
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def order_list_view(request):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
     orders = Order.objects.filter(customer=customer).order_by("-order_date")
     return Response(OrderSerializer(orders, many=True, context={"request": request}).data)
 
@@ -25,7 +29,10 @@ def order_list_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def order_create_view(request):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
+
     shipping_address = (request.data.get("shipping_address") or "").strip()
     shipping_phone = (request.data.get("shipping_phone") or "").strip()
 
@@ -84,33 +91,36 @@ def order_create_view(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def seller_order_list_view(request):
-    if not hasattr(request.user, "seller"):
-        return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
-    orders = Order.objects.filter(seller=request.user.seller).order_by("-order_date")
+    seller, error = get_seller_or_error(request)
+    if error:
+        return error
+    orders = Order.objects.filter(seller=seller, hidden_from_seller=False).order_by("-order_date")
     return Response(OrderSerializer(orders, many=True, context={"request": request}).data)
 
 
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def order_update_status_view(request, order_id):
-    if not hasattr(request.user, "seller"):
-        return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
-    try:
-        order = Order.objects.select_for_update().get(id=order_id, seller=request.user.seller)
-    except Order.DoesNotExist:
-        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+    seller, error = get_seller_or_error(request)
+    if error:
+        return error
 
     serializer = OrderStatusUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     new_status = serializer.validated_data["status"]
 
-    if not order.can_transition_to(new_status):
-        return Response(
-            {"error": f"Cannot change status from '{order.status}' to '{new_status}'"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
     with transaction.atomic():
+        try:
+            order = Order.objects.select_for_update().get(id=order_id, seller=seller)
+        except Order.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not order.can_transition_to(new_status):
+            return Response(
+                {"error": f"Cannot change status from '{order.status}' to '{new_status}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if new_status == "cancelled" and order.status != "cancelled":
             for item in order.items.select_related("product"):
                 item.product.stock_quantity += item.quantity
@@ -127,8 +137,11 @@ def order_update_status_view(request, order_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def order_confirm_delivery_view(request, order_id):
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
     try:
-        order = Order.objects.get(id=order_id, customer=request.user.customer)
+        order = Order.objects.get(id=order_id, customer=customer)
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -144,18 +157,20 @@ def order_confirm_delivery_view(request, order_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def order_delete_view(request, order_id):
-    if not hasattr(request.user, "seller"):
-        return Response({"error": "You must be a seller"}, status=status.HTTP_403_FORBIDDEN)
+    seller, error = get_seller_or_error(request)
+    if error:
+        return error
     try:
-        order = Order.objects.get(id=order_id, seller=request.user.seller)
+        order = Order.objects.get(id=order_id, seller=seller)
     except Order.DoesNotExist:
         return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if order.status not in ("cancelled",):
+    if order.status != "cancelled":
         return Response(
-            {"error": "Only cancelled orders can be deleted. Cancel the order first."},
+            {"error": "Only cancelled orders can be removed from your list. Cancel the order first."},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    order.delete()
+    order.hidden_from_seller = True
+    order.save()
     return Response(status=status.HTTP_204_NO_CONTENT)

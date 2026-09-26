@@ -66,7 +66,7 @@ class LoginScreen(Screen):
 
     def on_login(self, instance):
         username = self.username_input.text.strip()
-        password = self.password_input.text = ""
+        password = self.password_input.text
 
         if not username or not password:
             self.message_label.text = "Please enter username and password"
@@ -80,6 +80,7 @@ class LoginScreen(Screen):
 
     def on_login_result(self, data, status_code):
         self.login_button.disabled = False
+        self.password_input.text = ""
 
         if status_code != 200:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
