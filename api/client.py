@@ -3,7 +3,7 @@ import threading
 import requests
 from kivy.clock import Clock
 
-API_BASE_URL = "https://digishop-grwo.onrender.com/api"
+API_BASE_URL = "http://127.0.0.1:8000/api"
 
 _access_token = None
 _refresh_token = None
@@ -125,7 +125,7 @@ def post_async(path, callback, data=None, files=None):
         if files:
             return requests.post(f"{API_BASE_URL}{path}", headers=_headers(multipart=True), data=data, files=files, timeout=45)
         return requests.post(f"{API_BASE_URL}{path}", headers=_headers(), json=data, timeout=30)
-    _run_async(do_request, callback, retry_on_401=(files is None))
+    _run_async(do_request, callback, retry_on_401=True)
 
 
 def patch_async(path, callback, data=None):

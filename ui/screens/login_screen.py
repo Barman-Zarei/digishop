@@ -35,7 +35,7 @@ class LoginScreen(Screen):
             height=dp(56), padding=[dp(15)] * 4, font_size="16sp"
         )
         self.password_input.bind(on_text_validate=self.on_login)
-        
+
 
         self.message_label = Label(text="", color=(0.8, 0.2, 0.2, 1), size_hint=(1, 0.1), font_size="14sp")
 
@@ -66,7 +66,7 @@ class LoginScreen(Screen):
 
     def on_login(self, instance):
         username = self.username_input.text.strip()
-        password = self.password_input.text
+        password = self.password_input.text = ""
 
         if not username or not password:
             self.message_label.text = "Please enter username and password"
@@ -89,6 +89,9 @@ class LoginScreen(Screen):
         self.message_label.color = (0.2, 0.6, 0.3, 1)
         self.message_label.text = "Login successful"
         self.manager.current = "product_list"
+
+    def on_pre_enter(self, *args):
+        self.password_input.text = ""
 
     def go_to_register(self, instance):
         self.manager.current = "register"

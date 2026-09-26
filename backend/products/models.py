@@ -1,6 +1,26 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from PIL import Image
 
 from accounts.models import Seller
+
+MAX_IMAGE_DIMENSION = 3000
+MAX_IMAGE_SIZE_MB = 5
+
+
+def validate_product_image(image_file):
+    if image_file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024:
+        raise ValidationError(f"Image must be under {MAX_IMAGE_SIZE_MB}MB")
+    try:
+        image_file.seek(0)
+        with Image.open(image_file) as img:
+            width, height = img.size
+    except Exception:
+        raise ValidationError("Uploaded file is not a valid image")
+    finally:
+        image_file.seek(0)
+    if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+        raise ValidationError(f"Image dimensions must be at most {MAX_IMAGE_DIMENSION}x{MAX_IMAGE_DIMENSION}px")
 
 
 class Product(models.Model):

@@ -41,25 +41,30 @@ class Product:
 
     @staticmethod
     def create(name, price, stock_quantity, callback, description=None, image_file_path=None):
-        data = {"name": name, "price": str(price), "stock_quantity": str(stock_quantity), "description": description or ""}
-        files = None
-        opened_file = None
+        data = {
+            "name": name,
+            "price": str(int(round(float(price)))),
+            "stock_quantity": str(int(stock_quantity)),
+            "description": description or "",
+        }
+        image_bytes = None
+        image_name = None
         if image_file_path:
             try:
-                opened_file = open(image_file_path, "rb")
-                files = {"image": opened_file}
+                with open(image_file_path, "rb") as f:
+                    image_bytes = f.read()
+                image_name = image_file_path.split("/")[-1].split("\\")[-1]
             except OSError as e:
                 callback({"error": f"Could not open image file: {e}"}, 0)
                 return
 
         def on_response(response, error):
-            if opened_file:
-                opened_file.close()
             if error or response is None:
                 callback({"error": str(error) if error else "No response from server"}, 0)
                 return
             callback(client.safe_json(response), response.status_code)
 
+        files = {"image": (image_name, image_bytes)} if image_bytes else None
         client.post_async("/products/create/", on_response, data=data, files=files)
 
     @staticmethod
@@ -68,9 +73,9 @@ class Product:
         if name is not None:
             data["name"] = name
         if price is not None:
-            data["price"] = str(price)
+            data["price"] = str(int(round(float(price))))
         if stock_quantity is not None:
-            data["stock_quantity"] = str(stock_quantity)
+            data["stock_quantity"] = str(int(stock_quantity))
         if description is not None:
             data["description"] = description
 

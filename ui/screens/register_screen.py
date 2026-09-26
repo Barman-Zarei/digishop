@@ -109,7 +109,8 @@ class RegisterScreen(Screen):
 
         if status_code != 201:
             self.message_label.color = (0.8, 0.2, 0.2, 1)
-            self.message_label.text = str(data)
+            error_data = data if isinstance(data, dict) else {}
+            self.message_label.text = str(error_data.get("error", data))
             return
 
         self.message_label.color = (0.2, 0.6, 0.3, 1)

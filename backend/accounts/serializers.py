@@ -4,6 +4,12 @@ from rest_framework import serializers
 
 from .models import User, Customer, Seller
 
+import re
+
+NATIONAL_ID_RE = re.compile(r"^[0-9]{10}$")
+CARD_NUMBER_RE = re.compile(r"^[0-9]{16}$")
+IBAN_RE = re.compile(r"^IR[0-9]{24}$")
+
 
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
@@ -63,9 +69,18 @@ class BecomeSellerSerializer(serializers.Serializer):
     bank_account_number = serializers.CharField(min_length=10, max_length=34)
 
     def validate_national_id(self, value):
-        if not value.isdigit():
-            raise serializers.ValidationError("The National ID must consist only of numbers")
+        if not NATIONAL_ID_RE.fullmatch(value):
+            raise serializers.ValidationError("National ID must be exactly 10 ASCII digits (0-9)")
         return value
+
+    def validate_bank_account_number(self, value):
+        cleaned = value.replace(" ", "").replace("-", "").upper()
+        if cleaned.startswith("IR"):
+            if not IBAN_RE.fullmatch(cleaned):
+                raise serializers.ValidationError("Enter a valid IBAN: IR followed by 24 digits")
+        elif not CARD_NUMBER_RE.fullmatch(cleaned):
+            raise serializers.ValidationError("Enter a valid 16-digit card number or an IBAN starting with IR")
+        return cleaned
 
     def validate(self, attrs):
         request = self.context["request"]

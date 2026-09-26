@@ -38,18 +38,25 @@ def get_setting(name, default=None):
 
 
 def get_list_setting(name, default=""):
-    """Works whether the value comes from config.py as a list, or from
-    an environment variable as a comma-separated string."""
     value = get_setting(name, default)
     if isinstance(value, list):
         return value
-    return [item.strip() for item in value.split(",") if item.strip()]
+    return [item.strip() for item in str(value).split(",") if item.strip()]
+
+
+def get_bool_setting(name, default=False):
+    value = get_setting(name, default)
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("true", "1", "yes")
+
 
 SECRET_KEY = get_setting("SECRET_KEY")
 if not SECRET_KEY:
     raise Exception("SECRET_KEY environment variable is required")
 
-DEBUG = get_setting("DEBUG", "False") == "True"
+DEBUG = get_bool_setting("DEBUG", False)
+DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
 ALLOWED_HOSTS = get_list_setting("ALLOWED_HOSTS")
 
@@ -60,6 +67,31 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+if DEBUG:
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+else:
+    STORAGES = {
+        "default": {"BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": get_setting("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": get_setting("CLOUDINARY_API_KEY"),
+    "API_SECRET": get_setting("CLOUDINARY_API_SECRET"),
+}
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -71,11 +103,14 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "digishop_backend.exceptions.custom_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/hour",
+        "register": "5/hour",
+    },
 }
 
-# Restrict to your actual frontend origins in production; wildcard removed.
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # only permissive in local debug mode
+CORS_ALLOWED_ORIGINS = get_list_setting("CORS_ALLOWED_ORIGINS")
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -101,7 +136,6 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": get_setting("CLOUDINARY_API_SECRET"),
 }
 
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

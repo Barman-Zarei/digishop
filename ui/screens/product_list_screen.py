@@ -111,28 +111,34 @@ class ProductListScreen(Screen):
         search_row.add_widget(self.search_input)
         outer.add_widget(search_row)
 
-        filter_row = BoxLayout(size_hint=(1, None), height=dp(40), spacing=dp(6))
-        all_button = Button(text="All", background_color=(0.3, 0.4, 0.7, 1), background_normal="", color=(1, 1, 1, 1), font_size="12sp")
-        all_button.bind(on_press=self.clear_filter)
-        low_price_button = Button(text="Under 5M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        low_price_button.bind(on_press=lambda instance: self.filter_by_price(0, 5000000))
-        mid_price_button = Button(text="5M-20M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        mid_price_button.bind(on_press=lambda instance: self.filter_by_price(5000000, 20000000))
-        high_price_button = Button(text="20M-50M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        high_price_button.bind(on_press=lambda instance: self.filter_by_price(20000000, 50000000))
-        very_high_price_button = Button(text="50M-100M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(50000000, 100000000))
-        very_very_high_price_button = Button(text="100M-250M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        very_very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(100000000, 250000000))
-        very_very_very_high_price_button = Button(text="Over 250M", background_color=(0.4, 0.6, 0.5, 1), background_normal="", color=(1, 1, 1, 1), font_size="10sp")
-        very_very_high_price_button.bind(on_press=lambda instance: self.filter_by_price(250000000, None))
-        filter_row.add_widget(all_button)
-        filter_row.add_widget(low_price_button)
-        filter_row.add_widget(mid_price_button)
-        filter_row.add_widget(high_price_button)
-        filter_row.add_widget(very_high_price_button)
-        filter_row.add_widget(very_very_high_price_button)
-        filter_row.add_widget(very_very_very_high_price_button)
+        filter_row = BoxLayout(size_hint=(1, None), height=dp(34), spacing=dp(4))
+
+        price_ranges = [
+            ("Under 5M", 0, 5000000),
+            ("5M–20M", 5000000, 20000000),
+            ("20M–100M", 20000000, 100000000),
+            ("100M-200M", 100000000, 200000000),
+            ("200M-300M", 200000000, 300000000),
+            ("300M-500M", 300000000, 500000000),
+            ("500M-800M", 500000000, 800000000),
+            ("800M-1.5B", 800000000, 1500000000),
+            ("1.5B-2.5B", 1500000000, 2500000000),
+            ("2.5B-4B", 2500000000, 4000000000),
+            ("4B-8B", 4000000000, 8000000000),
+            ("8B-15B", 8000000000, 15000000000),
+            ("15B-20B", 15000000000, 20000000000),
+            ("20B-30B", 20000000000, 30000000000),
+            ("30B-40B", 30000000000, 40000000000),
+            ("40B-50B", 40000000000, 50000000000),
+            ("Over 50B", 50000000000, None),
+        ]
+        for label, low, high in price_ranges:
+            btn = Button(
+                text=label, background_color=(0.4, 0.6, 0.5, 1),
+                background_normal="", color=(1, 1, 1, 1), font_size="10sp"
+            )
+            btn.bind(on_press=lambda instance, low=low, high=high: self.filter_by_price(low, high))
+            filter_row.add_widget(btn)
         outer.add_widget(filter_row)
 
         self.message_label = Label(text="", color=(0.2, 0.6, 0.3, 1), size_hint=(1, None), height=dp(24), font_size="13sp")

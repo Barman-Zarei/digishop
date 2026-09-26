@@ -2,6 +2,9 @@ from rest_framework import serializers
 
 from .models import Product
 
+from .models import validate_product_image
+
+
 
 class ProductSerializer(serializers.ModelSerializer):
     seller_id = serializers.IntegerField(source="seller.id", read_only=True)
@@ -25,6 +28,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
+    def validate_image(self, value):
+        if value:
+            validate_product_image(value)
+        return value
+
     class Meta:
         model = Product
         fields = ["name", "description", "price", "stock_quantity", "image"]

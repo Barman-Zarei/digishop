@@ -6,9 +6,9 @@ from .models import CartItem
 class CartItemSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField(source="product.id", read_only=True)
     name = serializers.CharField(source="product.name", read_only=True)
-    price = serializers.DecimalField(source="product.price", max_digits=10, decimal_places=2, read_only=True)
-    image_path = serializers.SerializerMethodField()
+    price = serializers.DecimalField(source="product.price", max_digits=14, decimal_places=0, read_only=True)
     stock_quantity = serializers.IntegerField(source="product.stock_quantity", read_only=True)
+    image_path = serializers.SerializerMethodField()
     seller_id = serializers.IntegerField(source="seller.id", read_only=True)
 
     class Meta:

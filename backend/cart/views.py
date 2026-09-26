@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from django.db import transaction
 
+from accounts.utils import get_customer_or_error
 from products.models import Product
 from .models import CartItem
 from .serializers import CartItemSerializer, CartItemCreateSerializer, CartItemUpdateSerializer
@@ -13,7 +14,9 @@ from .serializers import CartItemSerializer, CartItemCreateSerializer, CartItemU
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def cart_list_view(request):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
     items = CartItem.objects.filter(customer=customer, product__is_active=True).select_related("product")
     return Response(CartItemSerializer(items, many=True, context={"request": request}).data)
 
@@ -21,7 +24,9 @@ def cart_list_view(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def cart_add_view(request):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
 
     serializer = CartItemCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -63,7 +68,9 @@ def cart_add_view(request):
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 def cart_update_view(request, item_id):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
 
     serializer = CartItemUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -89,7 +96,9 @@ def cart_update_view(request, item_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def cart_remove_view(request, item_id):
-    customer = request.user.customer
+    customer, error = get_customer_or_error(request)
+    if error:
+        return error
     try:
         cart_item = CartItem.objects.get(id=item_id, customer=customer)
     except CartItem.DoesNotExist:

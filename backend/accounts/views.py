@@ -7,6 +7,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.contrib.auth import authenticate
 
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from .throttles import LoginRateThrottle, RegisterRateThrottle
+
 from .models import Customer, Seller
 from .serializers import (
     RegisterSerializer,
@@ -26,6 +29,7 @@ def get_tokens_for_user(user):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterRateThrottle])
 def register_view(request):
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -42,6 +46,7 @@ def register_view(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login_view(request):
     username = request.data.get("username")
     password = request.data.get("password")
