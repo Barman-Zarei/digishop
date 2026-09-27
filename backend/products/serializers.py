@@ -48,8 +48,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        seller = self.context["request"].user.seller
-        return Product.objects.create(seller=seller, **validated_data)
+        return Product.objects.create(**validated_data)
 
 
 class ProductUpdateSerializer(serializers.ModelSerializer):
