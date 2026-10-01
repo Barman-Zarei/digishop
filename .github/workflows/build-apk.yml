@@ -8,6 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,8 +46,16 @@ jobs:
 
       - name: Install Buildozer and Cython
         run: |
-          pip install --upgrade pip setuptools wheel
-          pip install buildozer==1.5.0 cython==0.29.36 virtualenv
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install buildozer==1.5.0 cython==0.29.36 virtualenv
+
+      - name: Pin python-for-android fix
+        run: |
+          if grep -q '^p4a.branch' buildozer.spec; then
+            sed -i 's/^p4a.branch.*/p4a.branch = develop/' buildozer.spec
+          else
+            printf '\np4a.branch = develop\n' >> buildozer.spec
+          fi
 
       - name: Build APK
         run: |
