@@ -8,6 +8,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.graphics import Color, Rectangle
+from utils.persian_text import shape_persian
 
 from models.cart import CartItem
 from models.order import Order
@@ -100,7 +101,7 @@ class CheckoutScreen(Screen):
         self.cart_items = cart_items
         total = 0
         for item in cart_items:
-            row_text = f"{item['name']}  x{item['quantity']}  -  {float(item['price']) * item['quantity']:.2f} Toman"
+            row_text = f"{shape_persian(item['name'])}  x{item['quantity']}  -  {float(item['price']) * item['quantity']:.2f} Toman"
             self.summary_layout.add_widget(Label(text=row_text, color=(0.2, 0.2, 0.2, 1), size_hint_y=None, height=dp(28), font_size="13sp"))
             total += float(item["price"]) * item["quantity"]
         self.total_label.text = f"Total: {total:.2f} Toman"
@@ -148,7 +149,7 @@ class CheckoutScreen(Screen):
         for order in orders:
             block = BoxLayout(orientation="vertical", spacing=dp(4), size_hint_y=None, height=dp(110))
             block.add_widget(Label(
-                text=f"Order #{order['id']} - {order['store_name']}",
+                text=f"Order #{order['id']} - {shape_persian(order['store_name'])}",
                 bold=True, color=(0.1, 0.1, 0.1, 1), size_hint_y=None, height=dp(24)
             ))
             block.add_widget(Label(

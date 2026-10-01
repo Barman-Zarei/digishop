@@ -6,6 +6,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from utils.persian_text import shape_persian
 
 from models.cart import CartItem
 from api import client
@@ -24,7 +25,7 @@ class CartRow(BoxLayout):
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         info_box = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
-        info_box.add_widget(Label(text=item["name"], color=(0.1, 0.1, 0.1, 1), font_size="13sp", bold=True))
+        info_box.add_widget(Label(text=shape_persian(item["name"]), color=(0.1, 0.1, 0.1, 1)), font_size="13sp", bold=True)
         info_box.add_widget(Label(
             text=f"{float(item['price']):,.0f} Toman", color=(0.3, 0.5, 0.9, 1), font_size="12sp"
         ))

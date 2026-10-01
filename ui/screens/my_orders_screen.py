@@ -6,6 +6,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from utils.persian_text import shape_persian
 
 from models.order import Order
 
@@ -33,13 +34,13 @@ class MyOrderRow(BoxLayout):
 
         top_row = BoxLayout(size_hint=(1, None), height=dp(30))
         top_row.add_widget(Label(
-            text=f"Order #{order['id']} - {order['store_name']}",
+            text=f"Order #{order['id']} - {shape_persian(order['store_name'])}",
             color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True
         ))
         top_row.add_widget(Label(text=f"{order['total_amount']} Toman", color=(0.3, 0.5, 0.9, 1), font_size="14sp"))
         self.add_widget(top_row)
 
-        items_text = ", ".join(f"{item['name']} x{item['quantity']}" for item in order["items"])
+        items_text = ", ".join(f"{shape_persian(item['name'])} x{item['quantity']}" for item in order["items"])
         self.add_widget(Label(text=items_text, color=(0.4, 0.4, 0.4, 1), font_size="11sp", size_hint=(1, None), height=dp(30)))
 
         status_colors = {
@@ -70,7 +71,7 @@ class MyOrderRow(BoxLayout):
                 font_size="10sp", color=(0.8, 0.2, 0.2, 1), size_hint=(1, None), height=dp(34)
             ))
             fraud_box.add_widget(Label(
-                text=f"Legal name: {order.get('seller_legal_name', '')}",
+                text=f"Legal name: {shape_persian(order.get('seller_legal_name', ''))}",
                 font_size="11sp", color=(0.2, 0.2, 0.2, 1), size_hint=(1, None), height=dp(22)
             ))
             fraud_box.add_widget(Label(

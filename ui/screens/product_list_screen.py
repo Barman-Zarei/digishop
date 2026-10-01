@@ -1,6 +1,7 @@
 from kivy.metrics import dp
 
 from kivy.uix.screenmanager import Screen
+from utils.persian_text import shape_persian
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.scrollview import ScrollView
@@ -32,7 +33,7 @@ class ProductCard(BoxLayout):
         image = AsyncImage(source=image_path, size_hint=(1, 0.5), fit_mode="contain")
 
         name_label = Label(
-            text=product["name"], font_size="15sp", color=(0.1, 0.1, 0.1, 1),
+            text=shape_persian(product["name"]), font_size="15sp", color=(0.1, 0.1, 0.1, 1),
             size_hint=(1, 0.15), bold=True, text_size=(None, None), shorten=True, shorten_from="right"
         )
         out_of_stock = product.get("stock_quantity", 0) <= 0

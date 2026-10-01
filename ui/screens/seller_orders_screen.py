@@ -6,6 +6,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from utils.persian_text import shape_persian
 
 from models.order import Order
 
@@ -26,17 +27,17 @@ class SellerOrderRow(BoxLayout):
 
         top_row = BoxLayout(size_hint=(1, None), height=dp(26))
         top_row.add_widget(Label(
-            text=f"Order #{order['id']} - {order['customer_name']}",
+            text=f"Order #{order['id']} - {shape_persian(order['customer_name'])}",
             color=(0.1, 0.1, 0.1, 1), font_size="13sp", bold=True
         ))
         top_row.add_widget(Label(text=f"{order['total_amount']} Toman", color=(0.3, 0.5, 0.9, 1), font_size="12sp"))
         self.add_widget(top_row)
 
-        items_text = ", ".join(f"{item['name']} x{item['quantity']}" for item in order["items"])
+        items_text = ", ".join(f"{shape_persian(item['name'])} x{item['quantity']}" for item in order["items"])
         self.add_widget(Label(text=items_text, color=(0.4, 0.4, 0.4, 1), font_size="10sp", size_hint=(1, None), height=dp(24)))
 
         self.add_widget(Label(
-            text=f"Ship to: {order.get('shipping_address', '-')}",
+            text=f"Ship to: {shape_persian(order.get('shipping_address', '-'))}",
             color=(0.3, 0.3, 0.3, 1), font_size="10sp", size_hint=(1, None), height=dp(24)
         ))
         self.add_widget(Label(

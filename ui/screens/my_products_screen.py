@@ -8,6 +8,7 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.graphics import Color, Rectangle, RoundedRectangle
+from utils.persian_text import shape_persian
 
 from models.product import Product
 
@@ -25,7 +26,7 @@ class MyProductRow(BoxLayout):
         self.bind(size=self.update_bg, pos=self.update_bg)
 
         info = BoxLayout(orientation="vertical", size_hint=(0.5, 1))
-        info.add_widget(Label(text=product["name"], color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
+        info.add_widget(Label(text=shape_persian(product["name"]), color=(0.1, 0.1, 0.1, 1), font_size="14sp", bold=True))
         info.add_widget(Label(
             text=f"Toman {product['price']} - Stock: {product['stock_quantity']}",
             color=(0.4, 0.4, 0.4, 1), font_size="12sp"
@@ -131,7 +132,7 @@ class MyProductsScreen(Screen):
         buttons_row.add_widget(cancel_button)
         content.add_widget(buttons_row)
 
-        popup = Popup(title=f"Edit: {product['name']}", content=content, size_hint=(0.85, 0.75), auto_dismiss=False)
+        popup = Popup(title=f"Edit: {shape_persian(product['name'])}", content=content, size_hint=(0.85, 0.75), auto_dismiss=False)
 
         def on_save(instance):
             try:
@@ -180,7 +181,7 @@ class MyProductsScreen(Screen):
 
     def confirm_delete(self, product):
         content = BoxLayout(orientation="vertical", spacing=dp(10), padding=dp(15))
-        content.add_widget(Label(text=f"Delete '{product['name']}'?", color=(0.1, 0.1, 0.1, 1)))
+        content.add_widget(Label(text=f"Delete '{shape_persian(product['name'])}'?", color=(0.1, 0.1, 0.1, 1)))
 
         buttons_row = BoxLayout(size_hint=(1, 0.4), spacing=dp(10))
         yes_button = Button(text="Yes, Delete", background_color=(0.9, 0.3, 0.3, 1), background_normal="", color=(1, 1, 1, 1))

@@ -5,6 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.image import AsyncImage
+from utils.persian_text import shape_persian
 from kivy.graphics import Color, Rectangle
 
 from models.cart import CartItem
@@ -77,9 +78,9 @@ class ProductDetailScreen(Screen):
         self.message_label.text = ""
 
         self.image.source = product.get("image_path") or "assets/no_image.png"
-        self.name_label.text = product["name"]
+        self.name_label.text = shape_persian(product["name"])
         self.price_label.text = f"Toman {product['price']}"
-        self.description_label.text = product.get("description") or "No description available"
+        self.description_label.text = shape_persian(product.get("description")) or "No description available"
 
         in_stock = product["stock_quantity"] > 0
         self.stock_label.text = f"In stock: {product['stock_quantity']}" if in_stock else "Out of stock"

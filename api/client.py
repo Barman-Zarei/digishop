@@ -3,7 +3,7 @@ import threading
 import requests
 from kivy.clock import Clock
 
-API_BASE_URL = "https://digishop-grwo.onrender.com/api"
+API_BASE_URL = "https://digishop-grwo.onrender.com"
 
 _access_token = None
 _refresh_token = None
